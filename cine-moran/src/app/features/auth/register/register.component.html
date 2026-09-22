@@ -1,0 +1,73 @@
+<form novalidate (submit)="onSubmit($event)">
+  <h1>Crear cuenta</h1>
+
+  <label>
+    Nombre
+    <input type="text" [formField]="registerForm.nombre" />
+  </label>
+
+  <label>
+    Apellido
+    <input type="text" [formField]="registerForm.apellido" />
+  </label>
+
+  <label>
+    Fecha de nacimiento
+    <input type="date" [formField]="registerForm.fechaNacimiento" />
+  </label>
+
+  <label>
+    Tipo de sangre
+    <select [formField]="registerForm.tipoSangre">
+      <option value="">Preferís no decir</option>
+      <option value="A+">A+</option>
+      <option value="A-">A-</option>
+      <option value="B+">B+</option>
+      <option value="B-">B-</option>
+      <option value="AB+">AB+</option>
+      <option value="AB-">AB-</option>
+      <option value="O+">O+</option>
+      <option value="O-">O-</option>
+    </select>
+  </label>
+
+  <label>
+    Color de ojos
+    <input type="text" [formField]="registerForm.colorOjos" />
+  </label>
+
+  <label>
+    Días de vacaciones al año
+    <input type="number" [formField]="registerForm.diasVacaciones" />
+  </label>
+
+  <label>
+    Email
+    <input type="email" [formField]="registerForm.email" />
+    @if (registerForm.email().touched() && registerForm.email().invalid()) {
+      @for (err of registerForm.email().errors(); track err.kind) {
+        <small class="error">{{ err.message }}</small>
+      }
+    }
+  </label>
+
+  <label>
+    Contraseña
+    <input type="password" [formField]="registerForm.password" />
+    @if (registerForm.password().touched() && registerForm.password().invalid()) {
+      @for (err of registerForm.password().errors(); track err.kind) {
+        <small class="error">{{ err.message }}</small>
+      }
+    }
+  </label>
+
+  @if (errorMsg()) {
+    <p class="error">{{ errorMsg() }}</p>
+  }
+
+  <button type="submit" [disabled]="loading()">
+    {{ loading() ? 'Creando cuenta...' : 'Crear cuenta' }}
+  </button>
+
+  <p>¿Ya tenés cuenta? <a routerLink="/login">Ingresá</a></p>
+</form>
