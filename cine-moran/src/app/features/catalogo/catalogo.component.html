@@ -10,7 +10,7 @@
     (input)="onBusquedaChange($any($event.target).value)"
   />
 
-  <select (change)="onGeneroChange($any($event.target).value)">
+  <select [value]="generoSeleccionado() ?? ''" (change)="onGeneroChange($any($event.target).value)">
     <option value="">Todos los géneros</option>
     @for (genero of generosDisponibles(); track genero) {
       <option [value]="genero">{{ genero }}</option>

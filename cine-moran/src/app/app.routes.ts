@@ -48,14 +48,28 @@ export const routes: Routes = [
   },
 
    {
-    path: 'admin/crear-pelicula',
-    canActivate: [adminGuard],
-    loadComponent: () =>
-      import('./features/admin/crear-pelicula/crear-pelicula.component').then(
-        (m) => m.CrearPeliculaComponent,
-      ),
+    // agrupa todo lo de admin bajo un mismo guard: canActivateChild se fija
+    // antes de entrar a CUALQUIER ruta hija, sin repetir canActivate en cada una
+    path: 'admin',
+    canActivateChild: [adminGuard],
+    children: [
+      {
+        path: 'crear-pelicula',
+        loadComponent: () =>
+          import('./features/admin/crear-pelicula/crear-pelicula.component').then(
+            (m) => m.CrearPeliculaComponent,
+          ),
+      },
+      {
+        path: 'crear-funcion',
+        loadComponent: () =>
+          import('./features/admin/crear-funcion/crear-funcion.component').then(
+            (m) => m.CrearFuncionComponent,
+          ),
+      },
+    ],
   },
-  
+
   {
     path: '**',
     redirectTo: '',

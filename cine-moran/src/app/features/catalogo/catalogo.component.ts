@@ -1,4 +1,5 @@
 import { Component, OnInit, signal, computed } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
 import { PeliculasService } from './peliculas.service';
 import { Pelicula } from './pelicula.model';
 import { TarjetaPeliculaComponent } from './tarjeta-pelicula/tarjeta-pelicula.component';
@@ -38,9 +39,19 @@ export class CatalogoComponent implements OnInit {
     });
   });
 
-  constructor(private peliculasService: PeliculasService) {}
+  constructor(
+    private peliculasService: PeliculasService,
+    private route: ActivatedRoute,
+    private router: Router,
+  ) {}
 
   async ngOnInit() {
+    // si vienen de un link con ?q=...&genero=..., arrancamos con ese filtro
+    // ya puesto (por ej. "compartir" una búsqueda, o volver atrás con el navegador)
+    const queryParams = this.route.snapshot.queryParamMap;
+    this.busqueda.set(queryParams.get('q') ?? '');
+    this.generoSeleccionado.set(queryParams.get('genero'));
+
     this.cargando.set(true);
     const data = await this.peliculasService.getCartelera();
     this.peliculas.set(data);
@@ -49,9 +60,22 @@ export class CatalogoComponent implements OnInit {
 
   onBusquedaChange(valor: string) {
     this.busqueda.set(valor);
+    this.actualizarQueryParams();
   }
 
   onGeneroChange(valor: string) {
     this.generoSeleccionado.set(valor || null);
+    this.actualizarQueryParams();
+  }
+
+  // refleja el filtro actual en la URL, sin agregar una entrada nueva al
+  // historial por cada letra que se tipea (replaceUrl)
+  private actualizarQueryParams() {
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { q: this.busqueda() || null, genero: this.generoSeleccionado() },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
   }
 }
