@@ -1,0 +1,77 @@
+@if (cargando()) {
+  <p>Cargando...</p>
+} @else if (!pelicula()) {
+  <p>No se encontró la película.</p>
+} @else {
+  <a routerLink="/">← Volver a la cartelera</a>
+
+  <div class="detalle-pelicula">
+    @if (pelicula()!.imagen_url) {
+      <img [src]="pelicula()!.imagen_url" [alt]="pelicula()!.nombre" />
+    }
+
+    <div>
+      <h1>{{ pelicula()!.nombre }}</h1>
+      <p>{{ pelicula()!.duracionMinutos | duracion }} · {{ pelicula()!.generos.join(', ') }}</p>
+
+      @if (pelicula()!.restriccionEdad !== 'sin_restriccion') {
+        <span class="badge-restriccion">
+          Apta {{ pelicula()!.restriccionEdad }} — debe ir acompañado de un adulto
+        </span>
+      }
+
+      <p>{{ pelicula()!.sinopsis }}</p>
+
+      <div class="promedio">
+        ⭐ {{ promedio() }} / 5 ({{ resenas().length }} reseña{{ resenas().length === 1 ? '' : 's' }})
+      </div>
+    </div>
+  </div>
+
+  <section class="resenas">
+    <h2>Reseñas</h2>
+
+    @if (authService.currentUser() && !yaDejoResena()) {
+      <form novalidate [formGroup]="resenaForm" (ngSubmit)="onSubmitResena()">
+        <label>
+          Puntuación
+          <select formControlName="estrellas">
+            <option [ngValue]="5">5 - Excelente</option>
+            <option [ngValue]="4">4 - Muy buena</option>
+            <option [ngValue]="3">3 - Buena</option>
+            <option [ngValue]="2">2 - Regular</option>
+            <option [ngValue]="1">1 - Mala</option>
+          </select>
+        </label>
+
+        <label>
+          Comentario (opcional)
+          <textarea formControlName="comentario"></textarea>
+        </label>
+
+        @if (errorResena()) {
+          <p class="error">{{ errorResena() }}</p>
+        }
+
+        <button type="submit" [disabled]="enviandoResena()">
+          {{ enviandoResena() ? 'Enviando...' : 'Dejar reseña' }}
+        </button>
+      </form>
+    } @else if (!authService.currentUser()) {
+      <p><a routerLink="/login">Iniciá sesión</a> para dejar tu reseña.</p>
+    }
+
+    @if (resenas().length === 0) {
+      <p>Todavía no hay reseñas para esta película.</p>
+    } @else {
+      @for (resena of resenas(); track resena.id) {
+        <article class="resena">
+          <strong>{{ resena.nombreUsuario }}</strong> — ⭐ {{ resena.estrellas }}
+          @if (resena.comentario) {
+            <p>{{ resena.comentario }}</p>
+          }
+        </article>
+      }
+    }
+  </section>
+}

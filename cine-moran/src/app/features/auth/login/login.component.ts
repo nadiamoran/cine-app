@@ -1,25 +1,29 @@
 import { Component, signal } from '@angular/core';
+import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { form, FormField, required, email, submit } from '@angular/forms/signals';
 import { AuthService } from '../../../core/auth/auth.service';
-import { LoginData } from '../../../core/auth/user.model';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [ RouterLink, FormField],
+  imports: [RouterLink, ReactiveFormsModule],
   templateUrl: './login.component.html',
 })
 export class LoginComponent {
   errorMsg = signal<string | null>(null);
   loading = signal(false);
 
-  loginModel = signal<LoginData>({ email: '', password: '' });
-
-  loginForm = form(this.loginModel, (schemaPath) => {
-    required(schemaPath.email, { message: 'El email es obligatorio' });
-    email(schemaPath.email, { message: 'El email no es válido' });
-    required(schemaPath.password, { message: 'La contraseña es obligatoria' });
+  // validaciones del front: forma y estructura de los datos en el navegador.
+  // nonNullable evita que reset() deje los controles en null.
+  loginForm = new FormGroup({
+    email: new FormControl('', {
+      nonNullable: true,
+      validators: [Validators.required, Validators.email],
+    }),
+    password: new FormControl('', {
+      nonNullable: true,
+      validators: [Validators.required],
+    }),
   });
 
   constructor(
@@ -27,20 +31,31 @@ export class LoginComponent {
     private router: Router,
   ) {}
 
-  async onSubmit(event: Event) {
-    event.preventDefault();
+  // valida contra Supabase y carga el perfil real del usuario
+  async onSubmit() {
     this.errorMsg.set(null);
 
-    await submit(this.loginForm, async (form) => {
-      this.loading.set(true);
-      const { error } = await this.authService.login(form().value());
-      this.loading.set(false);
+    if (this.loginForm.invalid) {
+      // marcamos todo como "tocado" para que se muestren los mensajes de error
+      this.loginForm.markAllAsTouched();
+      return;
+    }
 
-      if (error) {
-        this.errorMsg.set(error);
-        return;
+    this.loading.set(true);
+    const { error } = await this.authService.login(this.loginForm.getRawValue());
+    this.loading.set(false);
+
+    if (error) {
+      // mapeamos el error en inglés de Supabase a un mensaje en español
+      if (error.includes('Invalid login credentials')) {
+        this.errorMsg.set('El correo o la contraseña son incorrectos. Intente nuevamente.');
+      } else {
+        // mensaje de respaldo por si ocurre otro error (ej: sin internet)
+        this.errorMsg.set('Ocurrió un error al intentar iniciar sesión.');
       }
-      this.router.navigate(['/']);
-    });
+      return;
+    }
+
+    this.router.navigate(['/']);
   }
 }

@@ -89,6 +89,7 @@ export class AuthService {
         tipoSangre: data.tipo_sangre,
         colorOjos: data.color_ojos,
         diasVacaciones: data.dias_vacaciones,
+        rol: data.rol,
       });
     }
   }

@@ -1,0 +1,27 @@
+<h1>Próximamente</h1>
+
+@if (cargando()) {
+  <p>Cargando...</p>
+} @else if (peliculas().length === 0) {
+  <p>No hay estrenos programados por ahora.</p>
+} @else {
+  <div class="grid-peliculas">
+    @for (pelicula of peliculas(); track pelicula.id) {
+      <article class="card-pelicula">
+        @if (pelicula.imagen_url) {
+          <img [src]="pelicula.imagen_url" [alt]="pelicula.nombre" />
+        }
+        <h3>{{ pelicula.nombre }}</h3>
+        <p>Estreno: {{ pelicula.fechaEstreno | date: 'dd/MM/yyyy' }}</p>
+
+        @if (authService.currentUser()) {
+          <button (click)="toggleAlerta(pelicula.id)">
+            {{ tieneAlerta(pelicula.id) ? 'Cancelar alerta' : 'Avisame' }}
+          </button>
+        } @else {
+          <a routerLink="/login">Iniciá sesión para que te avisen</a>
+        }
+      </article>
+    }
+  </div>
+}

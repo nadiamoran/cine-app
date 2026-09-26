@@ -22,4 +22,5 @@ export interface Profile {
   tipoSangre: string;
   colorOjos: string;
   diasVacaciones: number;
+  rol: 'cliente' | 'empleado' | 'administrador';
 }

@@ -1,0 +1,63 @@
+<h1>Agregar película</h1>
+
+<form novalidate [formGroup]="peliculaForm" (ngSubmit)="onSubmit()">
+  <label>
+    Nombre
+    <input type="text" formControlName="nombre" />
+    @if (peliculaForm.controls.nombre.touched && peliculaForm.controls.nombre.invalid) {
+      <small class="error">El nombre es obligatorio</small>
+    }
+  </label>
+
+  <label>
+    Sinopsis
+    <textarea formControlName="sinopsis"></textarea>
+  </label>
+
+  <label>
+    Duración (minutos)
+    <input type="number" formControlName="duracionMinutos" />
+    @if (peliculaForm.controls.duracionMinutos.touched && peliculaForm.controls.duracionMinutos.invalid) {
+      <small class="error">Ingresá una duración de al menos 1 minuto</small>
+    }
+  </label>
+
+  <label>
+    Géneros (separados por coma)
+    <input type="text" formControlName="generosTexto" placeholder="Acción, Drama" />
+    @if (peliculaForm.controls.generosTexto.touched && peliculaForm.controls.generosTexto.invalid) {
+      <small class="error">Ingresá al menos un género</small>
+    }
+  </label>
+
+  <label>
+    Restricción de edad
+    <select formControlName="restriccionEdad">
+      <option value="sin_restriccion">Sin restricción</option>
+      <option value="+13">+13</option>
+      <option value="+18">+18</option>
+    </select>
+  </label>
+
+  <label>
+    Fecha de estreno (dejar vacío si ya está en cartelera)
+    <input type="date" formControlName="fechaEstreno" />
+  </label>
+
+  <label>
+    Imagen
+    <input type="file" accept="image/*" (change)="onArchivoSeleccionado($event)" />
+  </label>
+
+  @if (previewUrl()) {
+    <img [src]="previewUrl()" alt="Vista previa" class="preview-imagen" />
+  }
+
+  @if (errorMsg()) {
+    <p class="error">{{ errorMsg() }}</p>
+  }
+
+  <button type="submit" [disabled]="guardando()">
+    {{ guardando() ? 'Guardando...' : 'Guardar película' }}
+  </button>
+</form>

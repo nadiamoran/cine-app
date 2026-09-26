@@ -1,0 +1,15 @@
+<nav>
+  <a routerLink="/">Cartelera</a>
+  <a routerLink="/proximamente">Próximamente</a>
+
+  @if (authService.currentUser()) {
+    @if (authService.currentUser()!.rol === 'administrador') {
+      <a routerLink="/admin/crear-pelicula">+ Agregar película</a>
+    }
+    <span>Hola, {{ authService.currentUser()!.nombre }}</span>
+    <button (click)="logout()">Cerrar sesión</button>
+  } @else {
+    <a routerLink="/login">Ingresar</a>
+    <a routerLink="/registro">Registrarme</a>
+  }
+</nav>

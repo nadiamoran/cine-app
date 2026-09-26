@@ -1,0 +1,25 @@
+@if (cargando()) {
+  <p>Cargando sala...</p>
+} @else if (!sala()) {
+  <p>No se encontró la sala.</p>
+} @else {
+  <h1>{{ sala()!.nombre }}</h1>
+  <div class="pantalla">PANTALLA</div>
+
+  <div class="mapa-butacas">
+    @for (item of filas(); track item[0]) {
+      <div class="fila-butacas">
+        <span class="letra-fila">{{ item[0] }}</span>
+        @for (butaca of item[1]; track butaca.id) {
+          <span class="butaca" [appButacaTipo]="butaca.tipo">{{ butaca.numero }}</span>
+        }
+      </div>
+    }
+  </div>
+
+  <div class="referencias">
+    <span class="butaca butaca-estandar"></span> Estándar
+    <span class="butaca butaca-vip"></span> VIP
+    <span class="butaca butaca-accesible"></span> Accesible
+  </div>
+}

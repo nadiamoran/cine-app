@@ -1,0 +1,42 @@
+<header>
+  <h1>Cartelera</h1>
+</header>
+
+<div class="filtros">
+  <input
+    type="text"
+    placeholder="Buscar película..."
+    [value]="busqueda()"
+    (input)="onBusquedaChange($any($event.target).value)"
+  />
+
+  <select (change)="onGeneroChange($any($event.target).value)">
+    <option value="">Todos los géneros</option>
+    @for (genero of generosDisponibles(); track genero) {
+      <option [value]="genero">{{ genero }}</option>
+    }
+  </select>
+</div>
+
+@if (cargando()) {
+  <p>Cargando cartelera...</p>
+} @else if (peliculasFiltradas().length === 0) {
+  <p>No se encontraron películas.</p>
+} @else {
+  <div class="grid-peliculas">
+    @for (pelicula of peliculasFiltradas(); track pelicula.id) {
+      
+          <a class="card-pelicula" [routerLink]="['/pelicula', pelicula.id]">
+        @if (pelicula.imagen_url) {
+          <img [src]="pelicula.imagen_url" [alt]="pelicula.nombre" />
+        }
+        <h3>{{ pelicula.nombre }}</h3>
+        <p>{{ pelicula.duracionMinutos | duracion }}</p>
+        <p>{{ pelicula.generos.join(', ') }}</p>
+        @if (pelicula.restriccionEdad !== 'sin_restriccion') {
+          <span class="badge-restriccion">{{ pelicula.restriccionEdad }}</span>
+        }
+      </a>
+    }
+  </div>
+}

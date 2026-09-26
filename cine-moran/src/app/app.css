@@ -39,3 +39,58 @@ button {
   font-size: 1rem;
   cursor: pointer;
 }
+
+.mapa-butacas {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  align-items: center;
+}
+
+.fila-butacas {
+  display: flex;
+  gap: 0.25rem;
+  align-items: center;
+}
+
+.letra-fila {
+  width: 1.5rem;
+  font-weight: bold;
+}
+
+.butaca {
+  width: 1.5rem;
+  height: 1.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  background: #ccc;
+}
+
+.butaca-estandar { background: #bdc3c7; }
+.butaca-vip { background: #f1c40f; }
+.butaca-accesible { background: #3498db; }
+
+.grid-peliculas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 1rem;
+}
+
+.card-pelicula {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+
+.card-pelicula img {
+  width: 100%;
+  border-radius: 6px;
+}
+
+.preview-imagen {
+  max-width: 200px;
+  border-radius: 6px;
+}
