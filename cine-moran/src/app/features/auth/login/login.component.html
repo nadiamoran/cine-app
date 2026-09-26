@@ -1,23 +1,23 @@
-<form novalidate (submit)="onSubmit($event)">
+<form novalidate [formGroup]="loginForm" (ngSubmit)="onSubmit()">
   <h1>Ingresar</h1>
 
   <label>
     Email
-    <input type="email" [formField]="loginForm.email" />
-    @if (loginForm.email().touched() && loginForm.email().invalid()) {
-      @for (err of loginForm.email().errors(); track err.kind) {
-        <small class="error">{{ err.message }}</small>
+    <input type="email" formControlName="email" />
+    @if (loginForm.controls.email.touched && loginForm.controls.email.invalid) {
+      @if (loginForm.controls.email.errors?.['required']) {
+        <small class="error">El email es obligatorio</small>
+      } @else if (loginForm.controls.email.errors?.['email']) {
+        <small class="error">El email no es válido</small>
       }
     }
   </label>
 
   <label>
     Contraseña
-    <input type="password" [formField]="loginForm.password" />
-    @if (loginForm.password().touched() && loginForm.password().invalid()) {
-      @for (err of loginForm.password().errors(); track err.kind) {
-        <small class="error">{{ err.message }}</small>
-      }
+    <input type="password" formControlName="password" />
+    @if (loginForm.controls.password.touched && loginForm.controls.password.invalid) {
+      <small class="error">La contraseña es obligatoria</small>
     }
   </label>
 

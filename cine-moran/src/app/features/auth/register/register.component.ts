@@ -1,38 +1,46 @@
 import { Component, signal } from '@angular/core';
+import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { form , required, email, minLength, submit, FormField } from '@angular/forms/signals';
 import { AuthService } from '../../../core/auth/auth.service';
-import { RegisterData } from '../../../core/auth/user.model';
+import { fechaNoFuturaValidator } from '../../../shared/validators/fecha.validators';
 
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [RouterLink, FormField],
+  imports: [RouterLink, ReactiveFormsModule],
   templateUrl: './register.component.html',
 })
 export class RegisterComponent {
   errorMsg = signal<string | null>(null);
   loading = signal(false);
 
-  registerModel = signal<RegisterData>({
-    email: '',
-    password: '',
-    nombre: '',
-    apellido: '',
-    fechaNacimiento: '',
-    tipoSangre: '',
-    colorOjos: '',
-    diasVacaciones: 0,
-  });
-
-  registerForm = form(this.registerModel, (schemaPath) => {
-    required(schemaPath.email, { message: 'El email es obligatorio' });
-    email(schemaPath.email, { message: 'El email no es válido' });
-    required(schemaPath.password, { message: 'La contraseña es obligatoria' });
-    minLength(schemaPath.password, 6, { message: 'Mínimo 6 caracteres' });
-    required(schemaPath.nombre, { message: 'El nombre es obligatorio' });
-    required(schemaPath.apellido, { message: 'El apellido es obligatorio' });
-    required(schemaPath.fechaNacimiento, { message: 'La fecha de nacimiento es obligatoria' });
+  registerForm = new FormGroup({
+    email: new FormControl('', {
+      nonNullable: true,
+      validators: [Validators.required, Validators.email],
+    }),
+    password: new FormControl('', {
+      nonNullable: true,
+      validators: [Validators.required, Validators.minLength(6)],
+    }),
+    nombre: new FormControl('', {
+      nonNullable: true,
+      validators: [Validators.required],
+    }),
+    apellido: new FormControl('', {
+      nonNullable: true,
+      validators: [Validators.required],
+    }),
+    fechaNacimiento: new FormControl('', {
+      nonNullable: true,
+      validators: [Validators.required, fechaNoFuturaValidator()],
+    }),
+    tipoSangre: new FormControl('', { nonNullable: true }),
+    colorOjos: new FormControl('', { nonNullable: true }),
+    diasVacaciones: new FormControl(0, {
+      nonNullable: true,
+      validators: [Validators.min(0), Validators.max(365)],
+    }),
   });
 
   constructor(
@@ -40,20 +48,23 @@ export class RegisterComponent {
     private router: Router,
   ) {}
 
-  async onSubmit(event: Event) {
-    event.preventDefault();
+  async onSubmit() {
     this.errorMsg.set(null);
 
-    await submit(this.registerForm, async (form) => {
-      this.loading.set(true);
-      const { error } = await this.authService.register(form().value());
-      this.loading.set(false);
+    if (this.registerForm.invalid) {
+      this.registerForm.markAllAsTouched();
+      return;
+    }
 
-      if (error) {
-        this.errorMsg.set(error);
-        return;
-      }
-      this.router.navigate(['/']);
-    });
+    this.loading.set(true);
+    // getRawValue() devuelve todos los campos con el tipo exacto de RegisterData
+    const { error } = await this.authService.register(this.registerForm.getRawValue());
+    this.loading.set(false);
+
+    if (error) {
+      this.errorMsg.set(error);
+      return;
+    }
+    this.router.navigate(['/']);
   }
 }

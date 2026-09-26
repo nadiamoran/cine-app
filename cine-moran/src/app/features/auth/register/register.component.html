@@ -1,24 +1,37 @@
-<form novalidate (submit)="onSubmit($event)">
+<form novalidate [formGroup]="registerForm" (ngSubmit)="onSubmit()">
   <h1>Crear cuenta</h1>
 
   <label>
     Nombre
-    <input type="text" [formField]="registerForm.nombre" />
+    <input type="text" formControlName="nombre" />
+    @if (registerForm.controls.nombre.touched && registerForm.controls.nombre.invalid) {
+      <small class="error">El nombre es obligatorio</small>
+    }
   </label>
 
   <label>
     Apellido
-    <input type="text" [formField]="registerForm.apellido" />
+    <input type="text" formControlName="apellido" />
+    @if (registerForm.controls.apellido.touched && registerForm.controls.apellido.invalid) {
+      <small class="error">El apellido es obligatorio</small>
+    }
   </label>
 
   <label>
     Fecha de nacimiento
-    <input type="date" [formField]="registerForm.fechaNacimiento" />
+    <input type="date" formControlName="fechaNacimiento" />
+    @if (registerForm.controls.fechaNacimiento.touched && registerForm.controls.fechaNacimiento.invalid) {
+      @if (registerForm.controls.fechaNacimiento.errors?.['required']) {
+        <small class="error">La fecha de nacimiento es obligatoria</small>
+      } @else if (registerForm.controls.fechaNacimiento.errors?.['fechaFutura']) {
+        <small class="error">La fecha no puede ser posterior a hoy</small>
+      }
+    }
   </label>
 
   <label>
     Tipo de sangre
-    <select [formField]="registerForm.tipoSangre">
+    <select formControlName="tipoSangre">
       <option value="">Preferís no decir</option>
       <option value="A+">A+</option>
       <option value="A-">A-</option>
@@ -33,30 +46,37 @@
 
   <label>
     Color de ojos
-    <input type="text" [formField]="registerForm.colorOjos" />
+    <input type="text" formControlName="colorOjos" />
   </label>
 
   <label>
     Días de vacaciones al año
-    <input type="number" [formField]="registerForm.diasVacaciones" />
+    <input type="number" formControlName="diasVacaciones" />
+    @if (registerForm.controls.diasVacaciones.touched && registerForm.controls.diasVacaciones.invalid) {
+      <small class="error">Ingresá un número entre 0 y 365</small>
+    }
   </label>
 
   <label>
     Email
-    <input type="email" [formField]="registerForm.email" />
-    @if (registerForm.email().touched() && registerForm.email().invalid()) {
-      @for (err of registerForm.email().errors(); track err.kind) {
-        <small class="error">{{ err.message }}</small>
+    <input type="email" formControlName="email" />
+    @if (registerForm.controls.email.touched && registerForm.controls.email.invalid) {
+      @if (registerForm.controls.email.errors?.['required']) {
+        <small class="error">El email es obligatorio</small>
+      } @else if (registerForm.controls.email.errors?.['email']) {
+        <small class="error">El email no es válido</small>
       }
     }
   </label>
 
   <label>
     Contraseña
-    <input type="password" [formField]="registerForm.password" />
-    @if (registerForm.password().touched() && registerForm.password().invalid()) {
-      @for (err of registerForm.password().errors(); track err.kind) {
-        <small class="error">{{ err.message }}</small>
+    <input type="password" formControlName="password" />
+    @if (registerForm.controls.password.touched && registerForm.controls.password.invalid) {
+      @if (registerForm.controls.password.errors?.['required']) {
+        <small class="error">La contraseña es obligatoria</small>
+      } @else if (registerForm.controls.password.errors?.['minlength']) {
+        <small class="error">Mínimo 6 caracteres</small>
       }
     }
   </label>
