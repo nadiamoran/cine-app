@@ -5,6 +5,7 @@
   @if (authService.currentUser()) {
     @if (authService.currentUser()!.rol === 'administrador') {
       <a routerLink="/admin/crear-pelicula">+ Agregar película</a>
+      <a routerLink="/admin/crear-funcion">+ Agregar función</a>
     }
     <span>Hola, {{ authService.currentUser()!.nombre }}</span>
     <button (click)="logout()">Cerrar sesión</button>

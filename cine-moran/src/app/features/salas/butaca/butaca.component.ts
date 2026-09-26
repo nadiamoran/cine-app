@@ -14,14 +14,12 @@ import { ButacaTipoDirective } from '../../../shared/directives/butaca-tipo.dire
 export class ButacaComponent {
   butaca = input.required<Butaca>();
   seleccionada = input(false);
-
-  // Cuando exista la compra con funciones reales, este input se va a completar
-  // con datos de Supabase Realtime (butacas tomadas por OTRA compra en curso).
-  // Por ahora la sala es solo el mapa estático, todavía no hay funciones.
+  ocupada = input(false);
 
   seleccionar = output<Butaca>();
 
   onClick() {
+    if (this.ocupada()) return;
     this.seleccionar.emit(this.butaca());
   }
 }

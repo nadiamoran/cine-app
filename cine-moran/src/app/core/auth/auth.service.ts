@@ -74,15 +74,17 @@ export class AuthService {
   }
 
   private async loadProfile(userId: string) {
-    const { data } = await this.supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
+    // el email no vive en "profiles" (esa tabla es de datos del cliente),
+    // vive en auth.users; lo traemos aparte y lo sumamos al perfil.
+    const [{ data }, { data: userData }] = await Promise.all([
+      this.supabase.from('profiles').select('*').eq('id', userId).single(),
+      this.supabase.auth.getUser(),
+    ]);
 
     if (data) {
       this.currentUser.set({
         id: data.id,
+        email: userData.user?.email ?? '',
         nombre: data.nombre,
         apellido: data.apellido,
         fechaNacimiento: data.fecha_nacimiento,

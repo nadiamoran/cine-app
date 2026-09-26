@@ -1,5 +1,6 @@
 import { Component, OnInit, signal, computed } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import { DatePipe } from '@angular/common';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { PeliculasService } from '../peliculas.service';
 import { ResenasService } from './resenas.service';
@@ -7,15 +8,18 @@ import { AuthService } from '../../../core/auth/auth.service';
 import { Pelicula } from '../pelicula.model';
 import { Resena } from './resena.model';
 import { DuracionPipe } from '../../../shared/pipes/duracion.pipe';
+import { FuncionesService } from '../../funciones/funciones.service';
+import { Funcion } from '../../funciones/funcion.model';
 
 @Component({
   selector: 'app-detalle-pelicula',
   standalone: true,
-  imports: [RouterLink, DuracionPipe, ReactiveFormsModule],
+  imports: [RouterLink, DuracionPipe, DatePipe, ReactiveFormsModule],
   templateUrl: './detalle-pelicula.component.html',
 })
 export class DetallePeliculaComponent implements OnInit {
   pelicula = signal<Pelicula | null>(null);
+  funciones = signal<Funcion[]>([]);
   resenas = signal<Resena[]>([]);
   cargando = signal(true);
   enviandoResena = signal(false);
@@ -50,6 +54,7 @@ export class DetallePeliculaComponent implements OnInit {
     private route: ActivatedRoute,
     private peliculasService: PeliculasService,
     private resenasService: ResenasService,
+    private funcionesService: FuncionesService,
     protected authService: AuthService,
   ) {}
 
@@ -57,13 +62,15 @@ export class DetallePeliculaComponent implements OnInit {
     this.peliculaId = this.route.snapshot.paramMap.get('id')!;
     this.cargando.set(true);
 
-    const [pelicula, resenas] = await Promise.all([
+    const [pelicula, resenas, funciones] = await Promise.all([
       this.peliculasService.getById(this.peliculaId),
       this.resenasService.getByPelicula(this.peliculaId),
+      this.funcionesService.getByPelicula(this.peliculaId),
     ]);
 
     this.pelicula.set(pelicula);
     this.resenas.set(resenas);
+    this.funciones.set(funciones);
     this.cargando.set(false);
   }
 

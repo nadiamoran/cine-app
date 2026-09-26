@@ -1,0 +1,81 @@
+@if (cargando()) {
+  <p>Cargando...</p>
+} @else if (!funcion()) {
+  <p>No se encontró la función.</p>
+} @else if (ordenConfirmada()) {
+  <section class="confirmacion">
+    <h1>¡Compra confirmada!</h1>
+    <p>{{ pelicula()?.nombre }} — {{ funcion()!.inicio | date: 'EEEE dd/MM HH:mm' }}</p>
+    <p>{{ ordenConfirmada()!.cantidadButacas }} entrada(s) · Total: ${{ ordenConfirmada()!.total }}</p>
+    <p>Confirmación enviada (simulado) a {{ ordenConfirmada()!.email }}.</p>
+    <a routerLink="/">Volver a la cartelera</a>
+  </section>
+} @else {
+  <a [routerLink]="['/pelicula', funcion()!.peliculaId]">← Volver a la película</a>
+
+  <h1>{{ pelicula()?.nombre }}</h1>
+  <p>
+    {{ funcion()!.inicio | date: 'EEEE dd/MM HH:mm' }} ·
+    {{ funcion()!.formato.toUpperCase() }} ·
+    {{ funcion()!.idioma === 'castellano' ? 'Castellano' : 'Subtitulada' }} ·
+    {{ funcion()!.nombreSala }}
+  </p>
+
+  @if (!puedeComprar()) {
+    <p class="error">
+      Esta función es apta {{ pelicula()?.restriccionEdad }}. Iniciá sesión con una cuenta que
+      cumpla la edad mínima para poder comprar.
+      <a routerLink="/login">Ingresar</a>
+    </p>
+  } @else {
+    <div class="pantalla">PANTALLA</div>
+
+    <div class="mapa-butacas">
+      @for (item of filas(); track item[0]) {
+        <div class="fila-butacas">
+          <span class="letra-fila">{{ item[0] }}</span>
+          @for (butaca of item[1]; track butaca.id) {
+            <app-butaca
+              [butaca]="butaca"
+              [seleccionada]="estaSeleccionada(butaca.id)"
+              [ocupada]="estaOcupada(butaca.id)"
+              (seleccionar)="onSeleccionarButaca($event)"
+            />
+          }
+        </div>
+      }
+    </div>
+
+    <div class="referencias">
+      <span class="butaca butaca-estandar"></span> Estándar
+      <span class="butaca butaca-vip"></span> VIP
+      <span class="butaca butaca-accesible"></span> Accesible
+      <span class="butaca butaca-seleccionada"></span> Seleccionada
+      <span class="butaca butaca-ocupada"></span> Ocupada
+    </div>
+
+    <div class="resumen-compra">
+      <p>{{ cantidadSeleccionada() }} butaca(s) seleccionada(s) · Total: ${{ total() }}</p>
+
+      @if (!authService.currentUser()) {
+        <form novalidate [formGroup]="emailForm">
+          <label>
+            Email para recibir la confirmación
+            <input type="email" formControlName="email" />
+            @if (emailForm.controls.email.touched && emailForm.controls.email.invalid) {
+              <small class="error">Ingresá un email válido</small>
+            }
+          </label>
+        </form>
+      }
+
+      @if (errorMsg()) {
+        <p class="error">{{ errorMsg() }}</p>
+      }
+
+      <button [disabled]="cantidadSeleccionada() === 0 || comprando()" (click)="onConfirmar()">
+        {{ comprando() ? 'Procesando...' : 'Confirmar compra' }}
+      </button>
+    </div>
+  }
+}

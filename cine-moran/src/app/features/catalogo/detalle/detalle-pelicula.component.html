@@ -28,6 +28,25 @@
     </div>
   </div>
 
+  <section class="funciones">
+    <h2>Horarios</h2>
+
+    @if (funciones().length === 0) {
+      <p>No hay funciones programadas por ahora.</p>
+    } @else {
+      @for (funcion of funciones(); track funcion.id) {
+        <article class="funcion">
+          {{ funcion.inicio | date: 'EEEE dd/MM HH:mm' }} ·
+          {{ funcion.formato.toUpperCase() }} ·
+          {{ funcion.idioma === 'castellano' ? 'Castellano' : 'Subtitulada' }} ·
+          {{ funcion.nombreSala }} ·
+          ${{ funcion.precio }}
+          <a [routerLink]="['/funcion', funcion.id]">Comprar entradas</a>
+        </article>
+      }
+    }
+  </section>
+
   <section class="resenas">
     <h2>Reseñas</h2>
 

@@ -1,6 +1,7 @@
 <span
   class="butaca"
   [class.butaca-seleccionada]="seleccionada()"
+  [class.butaca-ocupada]="ocupada()"
   [appButacaTipo]="butaca().tipo"
   (click)="onClick()"
 >{{ butaca().numero }}</span>

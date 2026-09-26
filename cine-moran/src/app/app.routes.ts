@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { adminGuard } from './core/guards/admin.guard';
+import { confirmarSalidaGuard } from './core/guards/confirmar-salida.guard';
 
 export const routes: Routes = [
 
@@ -45,6 +46,15 @@ export const routes: Routes = [
     path: 'sala/:id',
     loadComponent: () =>
       import('./features/salas/mapa-sala.component').then((m) => m.MapaSalaComponent),
+  },
+
+  {
+    path: 'funcion/:id',
+    canDeactivate: [confirmarSalidaGuard],
+    loadComponent: () =>
+      import('./features/ordenes/seleccion-butacas/seleccion-butacas.component').then(
+        (m) => m.SeleccionButacasComponent,
+      ),
   },
 
    {

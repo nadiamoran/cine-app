@@ -16,6 +16,7 @@ export interface LoginData {
 
 export interface Profile {
   id: string;
+  email: string;
   nombre: string;
   apellido: string;
   fechaNacimiento: string;

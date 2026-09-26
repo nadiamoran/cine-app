@@ -1,0 +1,62 @@
+<h1>Agregar función</h1>
+
+<p>La sala se asigna sola: el sistema busca la primera que esté libre en ese horario.</p>
+
+<form novalidate [formGroup]="funcionForm" (ngSubmit)="onSubmit()">
+  <label>
+    Película
+    <select formControlName="peliculaId">
+      <option value="" disabled>Elegí una película</option>
+      @for (pelicula of peliculas(); track pelicula.id) {
+        <option [value]="pelicula.id">{{ pelicula.nombre }}</option>
+      }
+    </select>
+    @if (funcionForm.controls.peliculaId.touched && funcionForm.controls.peliculaId.invalid) {
+      <small class="error">Elegí una película</small>
+    }
+  </label>
+
+  <label>
+    Fecha
+    <input type="date" formControlName="fecha" />
+  </label>
+
+  <label>
+    Hora
+    <input type="time" formControlName="hora" />
+  </label>
+
+  <label>
+    Formato
+    <select formControlName="formato">
+      <option value="2d">2D</option>
+      <option value="3d">3D</option>
+      <option value="4d">4D</option>
+      <option value="5d">5D</option>
+    </select>
+  </label>
+
+  <label>
+    Idioma
+    <select formControlName="idioma">
+      <option value="castellano">Castellano</option>
+      <option value="subtitulada">Subtitulada</option>
+    </select>
+  </label>
+
+  <label>
+    Precio
+    <input type="number" formControlName="precio" min="0" step="1" />
+  </label>
+
+  @if (errorMsg()) {
+    <p class="error">{{ errorMsg() }}</p>
+  }
+  @if (exito()) {
+    <p>Función creada.</p>
+  }
+
+  <button type="submit" [disabled]="guardando()">
+    {{ guardando() ? 'Guardando...' : 'Guardar función' }}
+  </button>
+</form>

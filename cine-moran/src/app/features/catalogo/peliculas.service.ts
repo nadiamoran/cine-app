@@ -28,6 +28,17 @@ export class PeliculasService {
     return data.map((row) => this.mapRow(row));
   }
 
+  async getTodas(): Promise<Pelicula[]> {
+    // para selects de administrador: todas las peliculas, esten o no en cartelera
+    const { data, error } = await this.supabase
+      .from('peliculas')
+      .select('*')
+      .order('nombre', { ascending: true });
+
+    if (error || !data) return [];
+    return data.map((row) => this.mapRow(row));
+  }
+
    async getById(id: string): Promise<Pelicula | null> {
     const { data, error } = await this.supabase
       .from('peliculas')
