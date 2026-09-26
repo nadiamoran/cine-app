@@ -1,1 +1,114 @@
-/* You can add global styles to this file, and also import other style files */
+/* Estilos globales de la app.
+   Antes vivían en app.css, pero ese archivo es el styleUrl de AppComponent y
+   AppComponent solo tiene <router-outlet/> en su plantilla: con la encapsulación
+   por defecto de Angular, esas reglas nunca llegaban a ningún elemento real
+   (todo lo demás se renderiza dentro de las rutas, no dentro de AppComponent). */
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.error {
+  color: #c0392b;
+  font-size: 0.85rem;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-width: 380px;
+  margin: 2rem auto;
+  padding: 1.5rem;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.9rem;
+}
+
+input,
+select {
+  padding: 0.5rem;
+  font-size: 1rem;
+}
+
+button {
+  padding: 0.6rem;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.mapa-butacas {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  align-items: center;
+}
+
+.fila-butacas {
+  display: flex;
+  gap: 0.25rem;
+  align-items: center;
+}
+
+.letra-fila {
+  width: 1.5rem;
+  font-weight: bold;
+}
+
+.butaca {
+  width: 1.5rem;
+  height: 1.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  background: #ccc;
+  cursor: pointer;
+  border: 2px solid transparent;
+}
+
+.butaca-estandar { background: #bdc3c7; }
+.butaca-vip { background: #f1c40f; }
+.butaca-accesible { background: #3498db; }
+
+.butaca-seleccionada {
+  border-color: #27ae60;
+  outline: 2px solid #27ae60;
+}
+
+.resumen-seleccion {
+  margin-top: 1rem;
+  font-weight: bold;
+}
+
+.grid-peliculas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 1rem;
+}
+
+.card-pelicula {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+
+.card-pelicula img {
+  width: 100%;
+  border-radius: 6px;
+}
+
+.preview-imagen {
+  max-width: 200px;
+  border-radius: 6px;
+}

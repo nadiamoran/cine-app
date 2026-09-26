@@ -25,18 +25,7 @@
 } @else {
   <div class="grid-peliculas">
     @for (pelicula of peliculasFiltradas(); track pelicula.id) {
-      
-          <a class="card-pelicula" [routerLink]="['/pelicula', pelicula.id]">
-        @if (pelicula.imagen_url) {
-          <img [src]="pelicula.imagen_url" [alt]="pelicula.nombre" />
-        }
-        <h3>{{ pelicula.nombre }}</h3>
-        <p>{{ pelicula.duracionMinutos | duracion }}</p>
-        <p>{{ pelicula.generos.join(', ') }}</p>
-        @if (pelicula.restriccionEdad !== 'sin_restriccion') {
-          <span class="badge-restriccion">{{ pelicula.restriccionEdad }}</span>
-        }
-      </a>
+      <app-tarjeta-pelicula [pelicula]="pelicula" />
     }
   </div>
 }

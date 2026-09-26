@@ -11,7 +11,11 @@
       <div class="fila-butacas">
         <span class="letra-fila">{{ item[0] }}</span>
         @for (butaca of item[1]; track butaca.id) {
-          <span class="butaca" [appButacaTipo]="butaca.tipo">{{ butaca.numero }}</span>
+          <app-butaca
+            [butaca]="butaca"
+            [seleccionada]="estaSeleccionada(butaca.id)"
+            (seleccionar)="onSeleccionarButaca($event)"
+          />
         }
       </div>
     }
@@ -21,5 +25,14 @@
     <span class="butaca butaca-estandar"></span> Estándar
     <span class="butaca butaca-vip"></span> VIP
     <span class="butaca butaca-accesible"></span> Accesible
+    <span class="butaca butaca-seleccionada"></span> Seleccionada
   </div>
+
+  <p class="resumen-seleccion">
+    @if (cantidadSeleccionada() === 0) {
+      Elegí una o más butacas.
+    } @else {
+      {{ cantidadSeleccionada() }} butaca{{ cantidadSeleccionada() === 1 ? '' : 's' }} seleccionada{{ cantidadSeleccionada() === 1 ? '' : 's' }}
+    }
+  </p>
 }

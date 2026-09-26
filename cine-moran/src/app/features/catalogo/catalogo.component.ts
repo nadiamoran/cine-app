@@ -1,13 +1,12 @@
 import { Component, OnInit, signal, computed } from '@angular/core';
-import { RouterLink } from '@angular/router';
 import { PeliculasService } from './peliculas.service';
 import { Pelicula } from './pelicula.model';
-import { DuracionPipe } from '../../shared/pipes/duracion.pipe';
+import { TarjetaPeliculaComponent } from './tarjeta-pelicula/tarjeta-pelicula.component';
 
 @Component({
   selector: 'app-catalogo',
   standalone: true,
-  imports: [RouterLink, DuracionPipe],
+  imports: [TarjetaPeliculaComponent],
   templateUrl: './catalogo.component.html',
 })
 export class CatalogoComponent implements OnInit {
