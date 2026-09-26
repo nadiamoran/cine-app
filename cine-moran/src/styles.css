@@ -1,8 +1,23 @@
 /* Estilos globales de la app.
-   Antes vivían en app.css, pero ese archivo es el styleUrl de AppComponent y
-   AppComponent solo tiene <router-outlet/> en su plantilla: con la encapsulación
-   por defecto de Angular, esas reglas nunca llegaban a ningún elemento real
-   (todo lo demás se renderiza dentro de las rutas, no dentro de AppComponent). */
+   Viven acá (no en app.css) porque AppComponent solo tiene <router-outlet/> en
+   su plantilla: con la encapsulación por defecto de Angular, un styleUrl de
+   AppComponent no llega a los componentes que renderiza cada ruta. */
+
+:root {
+  --bg: #101114;
+  --bg-elevated: #17191f;
+  --bg-card: #1b1e26;
+  --border: #2b2e38;
+  --text: #f1efe8;
+  --text-muted: #9aa0ac;
+  --dorado: #d9a441;
+  --dorado-hover: #c2902f;
+  --rojo: #b5333f;
+  --verde: #3fa66a;
+
+  --fuente-marquesina: 'Bebas Neue', 'Arial Narrow', sans-serif;
+  --fuente-texto: 'Inter', system-ui, -apple-system, sans-serif;
+}
 
 * {
   box-sizing: border-box;
@@ -10,119 +25,425 @@
 
 body {
   margin: 0;
-  font-family: system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--fuente-texto);
+}
+
+a {
+  color: var(--dorado);
+}
+
+h1, h2, h3 {
+  font-family: var(--fuente-marquesina);
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  color: var(--dorado);
+  margin-top: 0;
+}
+
+h1 { font-size: 2.4rem; }
+h2 { font-size: 1.6rem; margin-top: 2.5rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; }
+
+/* Todo lo que renderiza cada ruta cae como hermano directo de <router-outlet>,
+   sin importar qué tag use el componente de esa ruta (header, section, etc.).
+   Este selector le da un contenedor consistente a cualquier página. */
+router-outlet + * {
+  display: block;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 4rem;
 }
 
 .error {
-  color: #c0392b;
+  color: #ff8a80;
   font-size: 0.85rem;
 }
+
+/* ---------- navegación ---------- */
+
+nav {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  background: var(--bg-elevated);
+  border-bottom: 1px solid var(--border);
+  padding: 0.9rem 1.5rem;
+}
+
+.marca {
+  font-family: var(--fuente-marquesina);
+  font-size: 1.6rem;
+  letter-spacing: 0.06em;
+  color: var(--text);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.marca span {
+  color: var(--dorado);
+}
+
+.nav-links {
+  display: flex;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.nav-sesion {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  white-space: nowrap;
+}
+
+nav a {
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+nav a:hover {
+  color: var(--dorado);
+}
+
+.btn-primario,
+.btn-secundario {
+  display: inline-block;
+  padding: 0.4rem 0.9rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.btn-primario {
+  background: var(--dorado);
+  color: #14151a !important;
+}
+
+.btn-primario:hover {
+  background: var(--dorado-hover);
+  color: #14151a !important;
+}
+
+/* ---------- formularios ---------- */
 
 form {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  max-width: 380px;
-  margin: 2rem auto;
-  padding: 1.5rem;
+  gap: 1rem;
+  max-width: 400px;
+  margin: 1rem auto;
+  padding: 1.75rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
 }
 
 label {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
-  font-size: 0.9rem;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
 }
 
 input,
-select {
-  padding: 0.5rem;
+select,
+textarea {
+  padding: 0.55rem 0.7rem;
   font-size: 1rem;
+  font-family: inherit;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--dorado);
+}
+
+textarea {
+  resize: vertical;
+  min-height: 5rem;
 }
 
 button {
-  padding: 0.6rem;
+  padding: 0.65rem 1.1rem;
   font-size: 1rem;
+  font-weight: 600;
+  font-family: inherit;
   cursor: pointer;
+  border: none;
+  border-radius: 6px;
+  background: var(--dorado);
+  color: #14151a;
+  transition: background-color 0.15s ease;
+}
+
+button:hover:not(:disabled) {
+  background: var(--dorado-hover);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-secundario {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+.btn-secundario:hover:not(:disabled) {
+  border-color: var(--dorado);
+  background: transparent;
+}
+
+/* ---------- cartelera ---------- */
+
+.filtros {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.filtros input {
+  flex: 1;
+}
+
+.grid-peliculas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  align-items: stretch;
+  gap: 1.5rem;
+}
+
+.card-pelicula {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  text-decoration: none;
+  color: inherit;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.card-pelicula:hover {
+  transform: translateY(-4px);
+  border-color: var(--dorado);
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.4);
+}
+
+.card-pelicula img {
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  display: block;
+}
+
+.card-pelicula h3 {
+  margin: 0.75rem 0.75rem 0.25rem;
+  font-family: var(--fuente-texto);
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--text);
+}
+
+.card-pelicula p {
+  margin: 0.15rem 0.75rem;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
+.badge-restriccion {
+  display: inline-block;
+  align-self: flex-start;
+  margin: 0.4rem 0.75rem 0.75rem;
+  padding: 0.15rem 0.5rem;
+  background: var(--rojo);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  border-radius: 4px;
+}
+
+/* ---------- detalle de película ---------- */
+
+.detalle-pelicula {
+  display: flex;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.detalle-pelicula img {
+  width: 260px;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+.promedio {
+  margin-top: 1rem;
+  color: var(--dorado);
+  font-weight: 600;
+}
+
+/* ---------- funciones / horarios ---------- */
+
+.funciones .funcion,
+.resenas .resena {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 0.75rem;
+}
+
+.funcion a {
+  margin-left: 1rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.funcion a:hover {
+  text-decoration: underline;
+}
+
+/* ---------- mapa de butacas ---------- */
+
+.pantalla {
+  margin: 1.5rem auto 2rem;
+  max-width: 500px;
+  text-align: center;
+  letter-spacing: 0.35em;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  padding: 0.6rem;
+  background: linear-gradient(to bottom, rgba(217, 164, 65, 0.25), transparent);
+  border-radius: 50% / 10px;
 }
 
 .mapa-butacas {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
-  align-items: center;
+  gap: 0.3rem;
+  align-items: flex-start;
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
 }
 
 .fila-butacas {
   display: flex;
-  gap: 0.25rem;
+  gap: 0.3rem;
   align-items: center;
 }
 
 .letra-fila {
   width: 1.5rem;
-  font-weight: bold;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-align: center;
 }
 
 .butaca {
-  width: 1.5rem;
-  height: 1.5rem;
+  width: 1.6rem;
+  height: 1.6rem;
+  flex-shrink: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border-radius: 4px;
-  font-size: 0.7rem;
-  background: #ccc;
+  font-size: 0.65rem;
+  background: var(--border);
+  color: var(--text);
   cursor: pointer;
   border: 2px solid transparent;
 }
 
-.butaca-estandar { background: #bdc3c7; }
-.butaca-vip { background: #f1c40f; }
-.butaca-accesible { background: #3498db; }
+.butaca-estandar { background: #3a3f4b; }
+.butaca-vip { background: var(--dorado); color: #14151a; font-weight: 700; }
+.butaca-accesible { background: #3f7fbf; }
 
 .butaca-seleccionada {
-  border-color: #27ae60;
-  outline: 2px solid #27ae60;
+  border-color: var(--verde);
+  outline: 2px solid var(--verde);
 }
 
 .butaca-ocupada {
-  background: #7f8c8d !important;
+  background: #34363d !important;
+  color: var(--text-muted);
   cursor: not-allowed;
   opacity: 0.6;
 }
 
-.resumen-seleccion {
-  margin-top: 1rem;
-  font-weight: bold;
+.referencias {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.25rem;
+  align-items: center;
+  margin-top: 1.25rem;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.referencias .butaca {
+  cursor: default;
+  margin-right: -0.75rem;
+}
+
+/* ---------- resumen de compra ---------- */
+
+.resumen-seleccion,
+.resumen-compra p:first-child {
+  font-weight: 600;
 }
 
 .resumen-compra {
-  margin-top: 1rem;
+  margin-top: 1.5rem;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  max-width: 300px;
+  max-width: 320px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1.25rem;
 }
 
-.grid-peliculas {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 1rem;
+.resumen-compra form {
+  box-shadow: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  max-width: none;
 }
 
-.card-pelicula {
-  display: block;
-  text-decoration: none;
-  color: inherit;
-}
-
-.card-pelicula img {
-  width: 100%;
-  border-radius: 6px;
+.confirmacion {
+  max-width: 480px;
+  margin: 2rem auto;
+  padding: 2rem;
+  text-align: center;
+  background: var(--bg-card);
+  border: 1px solid var(--dorado);
+  border-radius: 12px;
 }
 
 .preview-imagen {
   max-width: 200px;
   border-radius: 6px;
+  display: block;
 }
