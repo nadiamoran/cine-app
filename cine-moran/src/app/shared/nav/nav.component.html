@@ -1,16 +1,25 @@
 <nav>
-  <a routerLink="/">Cartelera</a>
-  <a routerLink="/proximamente">Próximamente</a>
+  <a class="marca" routerLink="/">Cine<span>Moran</span></a>
 
-  @if (authService.currentUser()) {
-    @if (authService.currentUser()!.rol === 'administrador') {
-      <a routerLink="/admin/crear-pelicula">+ Agregar película</a>
-      <a routerLink="/admin/crear-funcion">+ Agregar función</a>
+  <div class="nav-links">
+    <a routerLink="/">Cartelera</a>
+    <a routerLink="/proximamente">Próximamente</a>
+    @if (authService.currentUser()?.rol === 'administrador') {
+      <a routerLink="/admin/crear-pelicula">+ Película</a>
+      <a routerLink="/admin/crear-funcion">+ Función</a>
     }
-    <span>Hola, {{ authService.currentUser()!.nombre }}</span>
-    <button (click)="logout()">Cerrar sesión</button>
-  } @else {
-    <a routerLink="/login">Ingresar</a>
-    <a routerLink="/registro">Registrarme</a>
-  }
+    @if (authService.currentUser()?.rol === 'empleado' || authService.currentUser()?.rol === 'administrador') {
+      <a routerLink="/empleado/validar">Validar entrada</a>
+    }
+  </div>
+
+  <div class="nav-sesion">
+    @if (authService.currentUser()) {
+      <span>Hola, {{ authService.currentUser()!.nombre }}</span>
+      <button class="btn-secundario" (click)="logout()">Cerrar sesión</button>
+    } @else {
+      <a routerLink="/login">Ingresar</a>
+      <a class="btn-primario" routerLink="/registro">Registrarme</a>
+    }
+  </div>
 </nav>

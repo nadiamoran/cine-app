@@ -63,6 +63,7 @@ export class TicketsService {
       doc.addImage(qrDataUrl, 'PNG', 12, y, 45, 45);
       doc.setFontSize(8);
       doc.text('Presentá este código en la entrada del cine y del candy bar.', 12, y + 50);
+      doc.text(`Código (si el lector no funciona): ${butaca.ordenButacaId}`, 12, y + 55);
     }
 
     const nombreArchivo = `entradas-${pelicula.nombre.toLowerCase().replace(/\s+/g, '-')}.pdf`;

@@ -1,0 +1,39 @@
+<h1>Validar entrada</h1>
+
+<div class="validacion-camara">
+  @if (camaraDisponible()) {
+    @if (!escaneando()) {
+      <button type="button" (click)="onIniciarCamara()">Escanear con la cámara</button>
+    } @else {
+      <button type="button" class="btn-secundario" (click)="onDetenerCamara()">Cancelar escaneo</button>
+    }
+  } @else {
+    <p class="error">El escaneo por cámara no está disponible en este navegador. Usá el código a mano.</p>
+  }
+
+  <video #video [style.display]="escaneando() ? 'block' : 'none'" muted playsinline></video>
+</div>
+
+<form novalidate [formGroup]="codigoForm" (ngSubmit)="onValidarCodigo()">
+  <label>
+    Código (si el lector no funciona, pedile a la persona que lo lea de su entrada)
+    <input type="text" formControlName="codigo" placeholder="Pegá o escribí el código" />
+  </label>
+
+  <button type="submit" [disabled]="validando()">
+    {{ validando() ? 'Validando...' : 'Validar' }}
+  </button>
+</form>
+
+@if (errorMsg()) {
+  <p class="error">{{ errorMsg() }}</p>
+}
+
+@if (resultado()) {
+  <div class="entrada-validada">
+    <h2>✔ Entrada válida</h2>
+    <p>{{ resultado()!.pelicula }}</p>
+    <p>{{ resultado()!.funcionInicio | date: 'EEEE dd/MM HH:mm' }}</p>
+    <p>Butaca: {{ resultado()!.fila }}{{ resultado()!.numero }} ({{ resultado()!.tipo }})</p>
+  </div>
+}

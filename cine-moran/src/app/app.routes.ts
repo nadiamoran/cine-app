@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { adminGuard } from './core/guards/admin.guard';
+import { empleadoGuard } from './core/guards/empleado.guard';
 import { confirmarSalidaGuard } from './core/guards/confirmar-salida.guard';
 
 export const routes: Routes = [
@@ -54,6 +55,17 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/ordenes/seleccion-butacas/seleccion-butacas.component').then(
         (m) => m.SeleccionButacasComponent,
+      ),
+  },
+
+  {
+    // canMatch (no canActivate): si el usuario no es empleado/admin, el router
+    // sigue evaluando otras rutas en vez de activar esta a medias
+    path: 'empleado/validar',
+    canMatch: [empleadoGuard],
+    loadComponent: () =>
+      import('./features/empleado/validar-entrada/validar-entrada.component').then(
+        (m) => m.ValidarEntradaComponent,
       ),
   },
 

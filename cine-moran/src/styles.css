@@ -474,6 +474,31 @@ button:disabled {
   max-width: none;
 }
 
+.validacion-camara {
+  margin-bottom: 1.5rem;
+}
+
+.validacion-camara video {
+  width: 100%;
+  max-width: 320px;
+  border-radius: 8px;
+  margin-top: 0.75rem;
+}
+
+.entrada-validada {
+  max-width: 400px;
+  margin: 1.5rem auto;
+  padding: 1.5rem;
+  text-align: center;
+  background: var(--bg-card);
+  border: 1px solid var(--verde);
+  border-radius: 10px;
+}
+
+.entrada-validada h2 {
+  color: var(--verde);
+}
+
 .confirmacion {
   max-width: 480px;
   margin: 2rem auto;
