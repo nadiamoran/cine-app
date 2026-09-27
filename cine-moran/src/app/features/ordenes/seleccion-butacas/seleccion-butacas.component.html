@@ -31,16 +31,24 @@
     <div class="pantalla">PANTALLA</div>
 
     <div class="mapa-butacas">
-      @for (item of filas(); track item[0]) {
-        <div class="fila-butacas">
-          <span class="letra-fila">{{ item[0] }}</span>
-          @for (butaca of item[1]; track butaca.id) {
-            <app-butaca
-              [butaca]="butaca"
-              [seleccionada]="estaSeleccionada(butaca.id)"
-              [ocupada]="estaOcupada(butaca.id)"
-              (seleccionar)="onSeleccionarButaca($event)"
-            />
+      @for (item of filas(); track item.fila) {
+        <div class="fila-butacas" [class.fila-vacia]="item.vacia">
+          <span class="letra-fila">{{ item.fila }}</span>
+          @if (!item.vacia) {
+            <div class="bloques-fila">
+              @for (bloque of item.bloques; track $index) {
+                <div class="bloque-butacas" [style.width.rem]="anchosBloqueRem()[$index]">
+                  @for (butaca of bloque; track butaca.id) {
+                    <app-butaca
+                      [butaca]="butaca"
+                      [seleccionada]="estaSeleccionada(butaca.id)"
+                      [ocupada]="estaOcupada(butaca.id)"
+                      (seleccionar)="onSeleccionarButaca($event)"
+                    />
+                  }
+                </div>
+              }
+            </div>
           }
         </div>
       }

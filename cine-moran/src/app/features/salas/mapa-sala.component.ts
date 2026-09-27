@@ -3,6 +3,7 @@ import { ActivatedRoute } from '@angular/router';
 import { SalasService } from './salas.service';
 import { Sala, Butaca } from './sala.model';
 import { ButacaComponent } from './butaca/butaca.component';
+import { agruparPorFilaYBloque, calcularAnchosBloque, anchoBloqueRem } from './butacas.utils';
 
 @Component({
   selector: 'app-mapa-sala',
@@ -18,15 +19,14 @@ export class MapaSalaComponent implements OnInit {
   // ids de las butacas que el usuario fue tocando en esta visita a la pantalla
   seleccionadas = signal<Set<string>>(new Set());
 
-  // agrupa las butacas planas en filas, para poder dibujar el grid fila por fila
-  filas = computed(() => {
-    const agrupadas = new Map<string, Butaca[]>();
-    for (const b of this.butacas()) {
-      if (!agrupadas.has(b.fila)) agrupadas.set(b.fila, []);
-      agrupadas.get(b.fila)!.push(b);
-    }
-    return Array.from(agrupadas.entries()).sort(([a], [b]) => a.localeCompare(b));
-  });
+  // agrupa las butacas por fila y por bloque, para dibujar el pasillo entre bloques
+  filas = computed(() => agruparPorFilaYBloque(this.butacas()));
+
+  // ancho de cada bloque (según la fila más ancha en esa posición), para que
+  // la fila accesible ocupe el mismo espacio físico que las demás
+  anchosBloqueRem = computed(() =>
+    calcularAnchosBloque(this.butacas()).map((cantidad) => anchoBloqueRem(cantidad)),
+  );
 
   cantidadSeleccionada = computed(() => this.seleccionadas().size);
 

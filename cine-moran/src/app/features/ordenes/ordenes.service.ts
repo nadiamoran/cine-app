@@ -22,6 +22,22 @@ export class OrdenesService {
     return new Set(data.map((row: any) => row.butaca_id));
   }
 
+  // Para decidir si mostrar el formulario de reseña. La regla real vive en
+  // la base (usuario_vio_pelicula(), usada también en la policy de insert de
+  // resenas — ver supabase/migraciones/006_...sql); esto solo evita mostrar
+  // un formulario que la base va a rechazar igual.
+  async yaVioPelicula(peliculaId: string): Promise<boolean> {
+    const { data, error } = await this.supabase.rpc('usuario_vio_pelicula', {
+      p_pelicula_id: peliculaId,
+    });
+
+    if (error) {
+      console.error('Error chequeando si vio la pelicula:', error);
+      return false;
+    }
+    return !!data;
+  }
+
   // crear_orden es una funcion de la base (security definer): crea la orden
   // y sus butacas en una sola transaccion. Si alguna butaca ya estaba
   // vendida para esa funcion, la restriccion "unique" de la base rechaza

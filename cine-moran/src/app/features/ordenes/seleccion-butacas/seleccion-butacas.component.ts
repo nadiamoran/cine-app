@@ -12,6 +12,7 @@ import { OrdenesService } from '../ordenes.service';
 import { Orden } from '../orden.model';
 import { AuthService } from '../../../core/auth/auth.service';
 import { ButacaComponent } from '../../salas/butaca/butaca.component';
+import { agruparPorFilaYBloque, calcularAnchosBloque, anchoBloqueRem } from '../../salas/butacas.utils';
 import { ComponentePuedeSalir } from '../../../core/guards/confirmar-salida.guard';
 
 @Component({
@@ -37,14 +38,13 @@ export class SeleccionButacasComponent implements OnInit, ComponentePuedeSalir {
     email: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.email] }),
   });
 
-  filas = computed(() => {
-    const agrupadas = new Map<string, Butaca[]>();
-    for (const b of this.butacas()) {
-      if (!agrupadas.has(b.fila)) agrupadas.set(b.fila, []);
-      agrupadas.get(b.fila)!.push(b);
-    }
-    return Array.from(agrupadas.entries()).sort(([a], [b]) => a.localeCompare(b));
-  });
+  filas = computed(() => agruparPorFilaYBloque(this.butacas()));
+
+  // ancho de cada bloque (según la fila más ancha en esa posición), para que
+  // la fila accesible ocupe el mismo espacio físico que las demás
+  anchosBloqueRem = computed(() =>
+    calcularAnchosBloque(this.butacas()).map((cantidad) => anchoBloqueRem(cantidad)),
+  );
 
   cantidadSeleccionada = computed(() => this.seleccionadas().size);
   total = computed(() => this.cantidadSeleccionada() * (this.funcion()?.precio ?? 0));

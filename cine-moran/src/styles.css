@@ -341,8 +341,11 @@ button:disabled {
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
-  align-items: flex-start;
-  overflow-x: auto;
+  align-items: stretch;    /* cada fila ocupa el ancho de la fila más larga */
+  width: fit-content;      /* el mapa se achica a su contenido real... */
+  max-width: 100%;         /* ...pero nunca se desborda de la página */
+  margin: 0 auto;          /* si entra en el ancho disponible, queda centrado */
+  overflow-x: auto;        /* si no entra (pantallas chicas), aparece scroll */
   padding-bottom: 0.5rem;
 }
 
@@ -350,6 +353,40 @@ button:disabled {
   display: flex;
   gap: 0.3rem;
   align-items: center;
+}
+
+/* Donde estaba la fila K (el cliente sacó J y K y puso una sola fila
+   accesible en su lugar) se dibuja la letra sola, sin butacas: deja ver que
+   ahí falta una fila entera, en vez de solo un espacio más grande. */
+.fila-vacia {
+  min-height: 1.6rem;
+}
+
+/* La letra de fila queda fija a la izquierda; este contenedor ocupa el resto
+   del ancho de la fila y centra sus butacas ahí adentro. Así, una fila con
+   menos butacas (como la accesible, J) queda centrada respecto al resto de
+   la sala en vez de pegada contra la letra. */
+.bloques-fila {
+  display: flex;
+  flex: 1;
+  gap: 0.3rem;
+  justify-content: center;
+}
+
+/* Las 3 columnas que definió el cliente (4/20/4, o 2/10/2 en la fila
+   accesible) van separadas por un pasillo, como en una sala real. El ancho
+   de cada bloque lo fija el componente (misma medida que el bloque
+   equivalente de una fila normal), así que acá solo repartimos las butacas
+   parejo dentro de ese ancho: si hay menos butacas (fila accesible), quedan
+   más separadas entre sí en vez de verse como un grupo más chico y suelto. */
+.bloque-butacas {
+  display: flex;
+  gap: 0.3rem;
+  justify-content: center;
+}
+
+.bloque-butacas + .bloque-butacas {
+  margin-left: 1.25rem;
 }
 
 .letra-fila {
