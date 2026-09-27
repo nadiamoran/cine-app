@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { SupabaseService } from '../../core/supabase.service';
-import { Orden } from './orden.model';
+import { OrdenConButacas } from './orden.model';
 
 @Injectable({ providedIn: 'root' })
 export class OrdenesService {
@@ -39,14 +39,15 @@ export class OrdenesService {
   }
 
   // crear_orden es una funcion de la base (security definer): crea la orden
-  // y sus butacas en una sola transaccion. Si alguna butaca ya estaba
-  // vendida para esa funcion, la restriccion "unique" de la base rechaza
-  // todo y no queda nada a medio crear.
+  // y sus butacas en una sola transaccion, y devuelve el detalle de cada
+  // butaca comprada (para armar el PDF con el QR de cada entrada). Si alguna
+  // butaca ya estaba vendida para esa funcion, la restriccion "unique" de la
+  // base rechaza todo y no queda nada a medio crear.
   async crear(
     funcionId: string,
     butacaIds: string[],
     email: string,
-  ): Promise<{ orden: Orden | null; error: string | null }> {
+  ): Promise<{ resultado: OrdenConButacas | null; error: string | null }> {
     const { data, error } = await this.supabase.rpc('crear_orden', {
       p_funcion_id: funcionId,
       p_butaca_ids: butacaIds,
@@ -54,18 +55,21 @@ export class OrdenesService {
     });
 
     if (error || !data) {
-      return { orden: null, error: error?.message ?? 'No se pudo crear la orden' };
+      return { resultado: null, error: error?.message ?? 'No se pudo crear la orden' };
     }
 
     return {
-      orden: {
-        id: data.id,
-        funcionId: data.funcion_id,
-        usuarioId: data.usuario_id,
-        email: data.email,
-        cantidadButacas: data.cantidad_butacas,
-        total: data.total,
-        estado: data.estado,
+      resultado: {
+        orden: {
+          id: data.orden.id,
+          funcionId: data.orden.funcion_id,
+          usuarioId: data.orden.usuario_id,
+          email: data.orden.email,
+          cantidadButacas: data.orden.cantidad_butacas,
+          total: data.orden.total,
+          estado: data.orden.estado,
+        },
+        butacas: data.butacas,
       },
       error: null,
     };

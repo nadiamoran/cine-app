@@ -9,7 +9,8 @@ import { Sala, Butaca } from '../../salas/sala.model';
 import { PeliculasService } from '../../catalogo/peliculas.service';
 import { Pelicula } from '../../catalogo/pelicula.model';
 import { OrdenesService } from '../ordenes.service';
-import { Orden } from '../orden.model';
+import { OrdenConButacas } from '../orden.model';
+import { TicketsService } from '../tickets.service';
 import { AuthService } from '../../../core/auth/auth.service';
 import { ButacaComponent } from '../../salas/butaca/butaca.component';
 import { agruparPorFilaYBloque, calcularAnchosBloque, anchoBloqueRem } from '../../salas/butacas.utils';
@@ -32,7 +33,8 @@ export class SeleccionButacasComponent implements OnInit, ComponentePuedeSalir {
 
   comprando = signal(false);
   errorMsg = signal<string | null>(null);
-  ordenConfirmada = signal<Orden | null>(null);
+  compraConfirmada = signal<OrdenConButacas | null>(null);
+  generandoPdf = signal(false);
 
   emailForm = new FormGroup({
     email: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.email] }),
@@ -94,6 +96,7 @@ export class SeleccionButacasComponent implements OnInit, ComponentePuedeSalir {
     private salasService: SalasService,
     private peliculasService: PeliculasService,
     private ordenesService: OrdenesService,
+    private ticketsService: TicketsService,
     protected authService: AuthService,
   ) {}
 
@@ -160,7 +163,7 @@ export class SeleccionButacasComponent implements OnInit, ComponentePuedeSalir {
     }
 
     this.comprando.set(true);
-    const { orden, error } = await this.ordenesService.crear(
+    const { resultado, error } = await this.ordenesService.crear(
       this.funcion()!.id,
       Array.from(this.seleccionadas()),
       email,
@@ -177,11 +180,25 @@ export class SeleccionButacasComponent implements OnInit, ComponentePuedeSalir {
       return;
     }
 
-    this.ordenConfirmada.set(orden);
+    this.compraConfirmada.set(resultado);
     this.seleccionadas.set(new Set());
   }
 
+  async onDescargarPdf() {
+    const resultado = this.compraConfirmada();
+    const funcion = this.funcion();
+    const pelicula = this.pelicula();
+    if (!resultado || !funcion || !pelicula) return;
+
+    this.generandoPdf.set(true);
+    try {
+      await this.ticketsService.generarPdf({ resultado, funcion, pelicula });
+    } finally {
+      this.generandoPdf.set(false);
+    }
+  }
+
   puedeSalir(): boolean {
-    return this.cantidadSeleccionada() === 0 || !!this.ordenConfirmada();
+    return this.cantidadSeleccionada() === 0 || !!this.compraConfirmada();
   }
 }

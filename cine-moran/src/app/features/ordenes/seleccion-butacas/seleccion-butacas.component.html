@@ -2,13 +2,19 @@
   <p>Cargando...</p>
 } @else if (!funcion()) {
   <p>No se encontró la función.</p>
-} @else if (ordenConfirmada()) {
+} @else if (compraConfirmada()) {
   <section class="confirmacion">
     <h1>¡Compra confirmada!</h1>
     <p>{{ pelicula()?.nombre }} — {{ funcion()!.inicio | date: 'EEEE dd/MM HH:mm' }}</p>
-    <p>{{ ordenConfirmada()!.cantidadButacas }} entrada(s) · Total: ${{ ordenConfirmada()!.total }}</p>
-    <p>Confirmación enviada (simulado) a {{ ordenConfirmada()!.email }}.</p>
-    <a routerLink="/">Volver a la cartelera</a>
+    <p>{{ compraConfirmada()!.orden.cantidadButacas }} entrada(s) · Total: ${{ compraConfirmada()!.orden.total }}</p>
+    <p>Butacas: {{ compraConfirmada()!.butacas.map(b => b.fila + b.numero).join(', ') }}</p>
+    <p>Confirmación enviada (simulado) a {{ compraConfirmada()!.orden.email }}.</p>
+
+    <button [disabled]="generandoPdf()" (click)="onDescargarPdf()">
+      {{ generandoPdf() ? 'Generando PDF...' : 'Descargar entradas (PDF)' }}
+    </button>
+
+    <p><a routerLink="/">Volver a la cartelera</a></p>
   </section>
 } @else {
   <a [routerLink]="['/pelicula', funcion()!.peliculaId]">← Volver a la película</a>
