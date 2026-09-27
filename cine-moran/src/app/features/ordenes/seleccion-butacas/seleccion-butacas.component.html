@@ -64,6 +64,9 @@
 
     <div class="resumen-compra">
       <p>{{ cantidadSeleccionada() }} butaca(s) seleccionada(s) · Total: ${{ total() }}</p>
+      @if (cantidadSeleccionada() > 0) {
+        <p class="detalle-seleccion">Butacas: {{ etiquetaSeleccion() }}</p>
+      }
 
       @if (!authService.currentUser()) {
         <form novalidate [formGroup]="emailForm">

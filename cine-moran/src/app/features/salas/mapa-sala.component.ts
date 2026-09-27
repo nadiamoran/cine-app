@@ -30,6 +30,16 @@ export class MapaSalaComponent implements OnInit {
 
   cantidadSeleccionada = computed(() => this.seleccionadas().size);
 
+  // detalle de qué butacas se eligieron (ej: "J3, J4, R5")
+  etiquetaSeleccion = computed(() => {
+    const ids = this.seleccionadas();
+    return this.butacas()
+      .filter((b) => ids.has(b.id))
+      .sort((a, b) => a.fila.localeCompare(b.fila) || a.numero - b.numero)
+      .map((b) => `${b.fila}${b.numero}`)
+      .join(', ');
+  });
+
   constructor(
     private route: ActivatedRoute,
     private salasService: SalasService,

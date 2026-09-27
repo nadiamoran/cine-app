@@ -449,6 +449,11 @@ button:disabled {
   font-weight: 600;
 }
 
+.detalle-seleccion {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
 .resumen-compra {
   margin-top: 1.5rem;
   display: flex;

@@ -49,6 +49,17 @@ export class SeleccionButacasComponent implements OnInit, ComponentePuedeSalir {
   cantidadSeleccionada = computed(() => this.seleccionadas().size);
   total = computed(() => this.cantidadSeleccionada() * (this.funcion()?.precio ?? 0));
 
+  // detalle de qué butacas eligió (ej: "J3, J4, R5"), para que confirme antes
+  // de pagar exactamente dónde se va a sentar, no solo cuántas entradas son
+  etiquetaSeleccion = computed(() => {
+    const ids = this.seleccionadas();
+    return this.butacas()
+      .filter((b) => ids.has(b.id))
+      .sort((a, b) => a.fila.localeCompare(b.fila) || a.numero - b.numero)
+      .map((b) => `${b.fila}${b.numero}`)
+      .join(', ');
+  });
+
   // RF-25: edad minima segun la restriccion de la pelicula (0 = sin restriccion)
   edadMinima = computed(() => {
     const r = this.pelicula()?.restriccionEdad;

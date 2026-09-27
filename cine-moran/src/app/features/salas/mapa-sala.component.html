@@ -40,7 +40,7 @@
     @if (cantidadSeleccionada() === 0) {
       Elegí una o más butacas.
     } @else {
-      {{ cantidadSeleccionada() }} butaca{{ cantidadSeleccionada() === 1 ? '' : 's' }} seleccionada{{ cantidadSeleccionada() === 1 ? '' : 's' }}
+      {{ cantidadSeleccionada() }} butaca{{ cantidadSeleccionada() === 1 ? '' : 's' }} seleccionada{{ cantidadSeleccionada() === 1 ? '' : 's' }}: {{ etiquetaSeleccion() }}
     }
   </p>
 }
