@@ -43,12 +43,6 @@ export const routes: Routes = [
       ),
   },
 
-   {
-    path: 'sala/:id',
-    loadComponent: () =>
-      import('./features/salas/mapa-sala.component').then((m) => m.MapaSalaComponent),
-  },
-
   {
     path: 'funcion/:id',
     canDeactivate: [confirmarSalidaGuard],

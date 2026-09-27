@@ -10,6 +10,7 @@ import { Resena } from './resena.model';
 import { DuracionPipe } from '../../../shared/pipes/duracion.pipe';
 import { FuncionesService } from '../../funciones/funciones.service';
 import { Funcion } from '../../funciones/funcion.model';
+import { OrdenesService } from '../../ordenes/ordenes.service';
 
 @Component({
   selector: 'app-detalle-pelicula',
@@ -24,6 +25,7 @@ export class DetallePeliculaComponent implements OnInit {
   cargando = signal(true);
   enviandoResena = signal(false);
   errorResena = signal<string | null>(null);
+  yaVioPelicula = signal(false);
 
   // se recalcula solo cuando cambia la lista de reseñas
   promedio = computed(() => {
@@ -55,6 +57,7 @@ export class DetallePeliculaComponent implements OnInit {
     private peliculasService: PeliculasService,
     private resenasService: ResenasService,
     private funcionesService: FuncionesService,
+    private ordenesService: OrdenesService,
     protected authService: AuthService,
   ) {}
 
@@ -62,15 +65,19 @@ export class DetallePeliculaComponent implements OnInit {
     this.peliculaId = this.route.snapshot.paramMap.get('id')!;
     this.cargando.set(true);
 
-    const [pelicula, resenas, funciones] = await Promise.all([
+    const usuario = this.authService.currentUser();
+
+    const [pelicula, resenas, funciones, yaVioPelicula] = await Promise.all([
       this.peliculasService.getById(this.peliculaId),
       this.resenasService.getByPelicula(this.peliculaId),
       this.funcionesService.getByPelicula(this.peliculaId),
+      usuario ? this.ordenesService.yaVioPelicula(this.peliculaId) : Promise.resolve(false),
     ]);
 
     this.pelicula.set(pelicula);
     this.resenas.set(resenas);
     this.funciones.set(funciones);
+    this.yaVioPelicula.set(yaVioPelicula);
     this.cargando.set(false);
   }
 

@@ -42,3 +42,10 @@ __screenshots__/
 # System files
 .DS_Store
 Thumbs.db
+
+# Firebase (cache local y "skills" de IA que agrega el propio CLI al detectar
+# herramientas como Claude/Copilot; no son parte del proyecto)
+.firebase/
+.claude/
+.agents/
+skills-lock.json

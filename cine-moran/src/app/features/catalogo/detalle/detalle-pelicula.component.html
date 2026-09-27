@@ -50,7 +50,7 @@
   <section class="resenas">
     <h2>Reseñas</h2>
 
-    @if (authService.currentUser() && !yaDejoResena()) {
+    @if (authService.currentUser() && !yaDejoResena() && yaVioPelicula()) {
       <form novalidate [formGroup]="resenaForm" (ngSubmit)="onSubmitResena()">
         <label>
           Puntuación
@@ -78,6 +78,8 @@
       </form>
     } @else if (!authService.currentUser()) {
       <p><a routerLink="/login">Iniciá sesión</a> para dejar tu reseña.</p>
+    } @else if (!yaDejoResena() && !yaVioPelicula()) {
+      <p>Solo pueden dejar reseña quienes ya vieron la película.</p>
     }
 
     @if (resenas().length === 0) {
