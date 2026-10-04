@@ -15,6 +15,8 @@ import { AuthService } from '../../../core/auth/auth.service';
 import { ButacaComponent } from '../../salas/butaca/butaca.component';
 import { agruparPorFilaYBloque, calcularAnchosBloque, anchoBloqueRem } from '../../salas/butacas.utils';
 import { ComponentePuedeSalir } from '../../../core/guards/confirmar-salida.guard';
+import { CandyBarService } from '../../candy-bar/candy-bar.service';
+import { Categoria, Producto, Combo } from '../../candy-bar/producto.model';
 
 @Component({
   selector: 'app-seleccion-butacas',
@@ -36,6 +38,12 @@ export class SeleccionButacasComponent implements OnInit, ComponentePuedeSalir {
   compraConfirmada = signal<OrdenConButacas | null>(null);
   generandoPdf = signal(false);
 
+  categorias = signal<Categoria[]>([]);
+  productos = signal<Producto[]>([]);
+  combos = signal<Combo[]>([]);
+  cantidadesProductos = signal<Map<string, number>>(new Map());
+  cantidadesCombos = signal<Map<string, number>>(new Map());
+
   emailForm = new FormGroup({
     email: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.email] }),
   });
@@ -49,7 +57,21 @@ export class SeleccionButacasComponent implements OnInit, ComponentePuedeSalir {
   );
 
   cantidadSeleccionada = computed(() => this.seleccionadas().size);
-  total = computed(() => this.cantidadSeleccionada() * (this.funcion()?.precio ?? 0));
+
+  totalCandy = computed(() => {
+    let suma = 0;
+    for (const [id, cantidad] of this.cantidadesProductos()) {
+      suma += (this.productos().find((p) => p.id === id)?.precio ?? 0) * cantidad;
+    }
+    for (const [id, cantidad] of this.cantidadesCombos()) {
+      suma += (this.combos().find((c) => c.id === id)?.precio ?? 0) * cantidad;
+    }
+    return suma;
+  });
+
+  total = computed(
+    () => this.cantidadSeleccionada() * (this.funcion()?.precio ?? 0) + this.totalCandy(),
+  );
 
   // detalle de qué butacas eligió (ej: "J3, J4, R5"), para que confirme antes
   // de pagar exactamente dónde se va a sentar, no solo cuántas entradas son
@@ -97,6 +119,7 @@ export class SeleccionButacasComponent implements OnInit, ComponentePuedeSalir {
     private peliculasService: PeliculasService,
     private ordenesService: OrdenesService,
     private ticketsService: TicketsService,
+    private candyBarService: CandyBarService,
     protected authService: AuthService,
   ) {}
 
@@ -104,13 +127,19 @@ export class SeleccionButacasComponent implements OnInit, ComponentePuedeSalir {
     this.cargando.set(true);
     const funcionId = this.route.snapshot.paramMap.get('id')!;
 
-    const [funcion, ocupadas] = await Promise.all([
+    const [funcion, ocupadas, categorias, productos, combos] = await Promise.all([
       this.funcionesService.getById(funcionId),
       this.ordenesService.getButacasOcupadas(funcionId),
+      this.candyBarService.getCategorias(),
+      this.candyBarService.getProductosActivos(),
+      this.candyBarService.getCombosActivos(),
     ]);
 
     this.funcion.set(funcion);
     this.ocupadas.set(ocupadas);
+    this.categorias.set(categorias);
+    this.productos.set(productos);
+    this.combos.set(combos);
 
     if (funcion) {
       const [pelicula, sala, butacas] = await Promise.all([
@@ -144,6 +173,46 @@ export class SeleccionButacasComponent implements OnInit, ComponentePuedeSalir {
     this.seleccionadas.set(actuales);
   }
 
+  productosDeCategoria(categoriaId: string): Producto[] {
+    return this.productos().filter((p) => p.categoriaId === categoriaId);
+  }
+
+  cantidadProducto(id: string): number {
+    return this.cantidadesProductos().get(id) ?? 0;
+  }
+
+  cantidadCombo(id: string): number {
+    return this.cantidadesCombos().get(id) ?? 0;
+  }
+
+  onCambiarCantidadProducto(id: string, valor: string) {
+    this.cantidadesProductos.set(this.actualizarCantidad(this.cantidadesProductos(), id, valor));
+  }
+
+  onCambiarCantidadCombo(id: string, valor: string) {
+    this.cantidadesCombos.set(this.actualizarCantidad(this.cantidadesCombos(), id, valor));
+  }
+
+  private actualizarCantidad(mapa: Map<string, number>, id: string, valor: string): Map<string, number> {
+    const cantidad = Math.max(0, Math.floor(Number(valor) || 0));
+    const actuales = new Map(mapa);
+    if (cantidad === 0) {
+      actuales.delete(id);
+    } else {
+      actuales.set(id, cantidad);
+    }
+    return actuales;
+  }
+
+  // un id repetido tantas veces como la cantidad elegida: asi lo espera crear_orden
+  private idsRepetidos(mapa: Map<string, number>): string[] {
+    const resultado: string[] = [];
+    for (const [id, cantidad] of mapa) {
+      for (let i = 0; i < cantidad; i++) resultado.push(id);
+    }
+    return resultado;
+  }
+
   async onConfirmar() {
     this.errorMsg.set(null);
     const usuario = this.authService.currentUser();
@@ -167,6 +236,8 @@ export class SeleccionButacasComponent implements OnInit, ComponentePuedeSalir {
       this.funcion()!.id,
       Array.from(this.seleccionadas()),
       email,
+      this.idsRepetidos(this.cantidadesProductos()),
+      this.idsRepetidos(this.cantidadesCombos()),
     );
     this.comprando.set(false);
 
@@ -182,6 +253,9 @@ export class SeleccionButacasComponent implements OnInit, ComponentePuedeSalir {
 
     this.compraConfirmada.set(resultado);
     this.seleccionadas.set(new Set());
+    this.cantidadesProductos.set(new Map());
+    this.cantidadesCombos.set(new Map());
+    await this.authService.recargarPerfil(); // para que se vean los puntos ganados
   }
 
   async onDescargarPdf() {

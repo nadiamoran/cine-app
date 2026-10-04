@@ -474,6 +474,11 @@ button:disabled {
   max-width: none;
 }
 
+.acciones-validacion {
+  display: flex;
+  gap: 0.75rem;
+}
+
 .validacion-camara {
   margin-bottom: 1.5rem;
 }
@@ -497,6 +502,121 @@ button:disabled {
 
 .entrada-validada h2 {
   color: var(--verde);
+}
+
+.resumen-perfil {
+  display: flex;
+  gap: 1rem;
+  margin: 1rem 0 2rem;
+}
+
+.tarjeta-metrica {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 140px;
+}
+
+.tarjeta-metrica .valor {
+  font-family: var(--fuente-marquesina);
+  font-size: 2rem;
+  color: var(--dorado);
+}
+
+.tarjeta-metrica .etiqueta {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.grilla-candy {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.item-candy {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.6rem 0.9rem;
+  font-size: 0.9rem;
+}
+
+.item-candy span:first-child {
+  flex: 1;
+}
+
+.item-candy input {
+  width: 3.5rem;
+  padding: 0.3rem;
+}
+
+.item-candy-combo {
+  border-color: var(--dorado);
+}
+
+.fila-combo-producto {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.fila-combo-producto span {
+  flex: 1;
+}
+
+.fila-combo-producto input {
+  width: 4rem;
+}
+
+.cupon-item {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 0.75rem;
+}
+
+.cupon-item > div:first-child {
+  flex: 1;
+}
+
+.cupon-item label {
+  width: 100px;
+}
+
+.compra-historial {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 0.75rem;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.compra-historial strong {
+  color: var(--text);
+}
+
+.badge-cancelada {
+  color: var(--rojo);
+  font-weight: 600;
 }
 
 .confirmacion {

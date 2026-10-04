@@ -7,6 +7,9 @@
     @if (authService.currentUser()?.rol === 'administrador') {
       <a routerLink="/admin/crear-pelicula">+ Película</a>
       <a routerLink="/admin/crear-funcion">+ Función</a>
+      <a routerLink="/admin/cupones">Cupones</a>
+      <a routerLink="/admin/crear-producto">+ Producto</a>
+      <a routerLink="/admin/crear-combo">+ Combo</a>
     }
     @if (authService.currentUser()?.rol === 'empleado' || authService.currentUser()?.rol === 'administrador') {
       <a routerLink="/empleado/validar">Validar entrada</a>
@@ -15,7 +18,7 @@
 
   <div class="nav-sesion">
     @if (authService.currentUser()) {
-      <span>Hola, {{ authService.currentUser()!.nombre }}</span>
+      <a routerLink="/perfil">Hola, {{ authService.currentUser()!.nombre }}</a>
       <button class="btn-secundario" (click)="logout()">Cerrar sesión</button>
     } @else {
       <a routerLink="/login">Ingresar</a>

@@ -30,4 +30,23 @@ export class ValidacionService {
 
     return { entrada: data, error: null };
   }
+
+  // retirar_candy busca la orden a partir del mismo codigo de cualquiera de
+  // sus butacas, y marca sus productos como entregados. Es independiente de
+  // validar_entrada (ver supabase/migraciones/012_...sql).
+  async retirarCandy(codigo: string): Promise<{ items: { nombre: string; cantidad: number }[] | null; error: string | null }> {
+    const { data, error } = await this.supabase.rpc('retirar_candy', {
+      p_orden_butaca_id: codigo,
+    });
+
+    if (error || !data) {
+      const esCodigoMalformado = error?.message?.includes('invalid input syntax');
+      return {
+        items: null,
+        error: esCodigoMalformado ? 'Código inválido' : (error?.message ?? 'No se pudo retirar'),
+      };
+    }
+
+    return { items: data.items, error: null };
+  }
 }

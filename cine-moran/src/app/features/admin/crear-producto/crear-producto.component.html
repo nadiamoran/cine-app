@@ -1,0 +1,42 @@
+<h1>Agregar producto</h1>
+
+<form novalidate [formGroup]="nuevaCategoriaForm" (ngSubmit)="onCrearCategoria()">
+  <label>
+    Nueva categoría (opcional, si no está en la lista de abajo)
+    <input type="text" formControlName="nombre" placeholder="Ej: Combos individuales" />
+  </label>
+  <button type="submit">Agregar categoría</button>
+</form>
+
+<form novalidate [formGroup]="productoForm" (ngSubmit)="onSubmit()">
+  <label>
+    Categoría
+    <select formControlName="categoriaId">
+      <option value="" disabled>Elegí una categoría</option>
+      @for (categoria of categorias(); track categoria.id) {
+        <option [value]="categoria.id">{{ categoria.nombre }}</option>
+      }
+    </select>
+  </label>
+
+  <label>
+    Nombre
+    <input type="text" formControlName="nombre" placeholder="Pochoclos grandes" />
+  </label>
+
+  <label>
+    Precio
+    <input type="number" min="0" formControlName="precio" />
+  </label>
+
+  @if (errorMsg()) {
+    <p class="error">{{ errorMsg() }}</p>
+  }
+  @if (exito()) {
+    <p>Producto creado.</p>
+  }
+
+  <button type="submit" [disabled]="guardando()">
+    {{ guardando() ? 'Guardando...' : 'Guardar producto' }}
+  </button>
+</form>

@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { SupabaseService } from '../../core/supabase.service';
-import { OrdenConButacas } from './orden.model';
+import { OrdenConButacas, CompraHistorial, Cupon } from './orden.model';
 
 @Injectable({ providedIn: 'root' })
 export class OrdenesService {
@@ -38,20 +38,48 @@ export class OrdenesService {
     return !!data;
   }
 
+  // Historial de compras del usuario logueado (RLS de "ordenes" ya limita
+  // esto a sus propias ordenes: ver supabase/migraciones/004_ordenes.sql)
+  async getHistorial(): Promise<CompraHistorial[]> {
+    const { data, error } = await this.supabase
+      .from('ordenes')
+      .select('id, cantidad_butacas, total, estado, created_at, funciones(inicio, peliculas(nombre))')
+      .order('created_at', { ascending: false });
+
+    if (error || !data) {
+      console.error('Error trayendo historial de compras:', error);
+      return [];
+    }
+
+    return data.map((row: any) => ({
+      id: row.id,
+      peliculaNombre: row.funciones?.peliculas?.nombre ?? '(película eliminada)',
+      funcionInicio: row.funciones?.inicio ?? '',
+      cantidadButacas: row.cantidad_butacas,
+      total: row.total,
+      estado: row.estado,
+      createdAt: row.created_at,
+    }));
+  }
+
   // crear_orden es una funcion de la base (security definer): crea la orden
   // y sus butacas en una sola transaccion, y devuelve el detalle de cada
   // butaca comprada (para armar el PDF con el QR de cada entrada). Si alguna
   // butaca ya estaba vendida para esa funcion, la restriccion "unique" de la
   // base rechaza todo y no queda nada a medio crear.
   async crear(
-    funcionId: string,
+    funcionId: string | null,
     butacaIds: string[],
     email: string,
+    productoIds: string[] = [],
+    comboIds: string[] = [],
   ): Promise<{ resultado: OrdenConButacas | null; error: string | null }> {
     const { data, error } = await this.supabase.rpc('crear_orden', {
       p_funcion_id: funcionId,
       p_butaca_ids: butacaIds,
       p_email: email,
+      p_producto_ids: productoIds,
+      p_combo_ids: comboIds,
     });
 
     if (error || !data) {
@@ -70,8 +98,46 @@ export class OrdenesService {
           estado: data.orden.estado,
         },
         butacas: data.butacas,
+        productos: data.productos ?? [],
+        cuponAplicado: data.cuponAplicado,
       },
       error: null,
     };
+  }
+
+  // --- cupones (administracion) ---
+
+  async getCupones(): Promise<Cupon[]> {
+    const { data, error } = await this.supabase
+      .from('cupones')
+      .select('*')
+      .order('created_at', { ascending: true });
+
+    if (error || !data) return [];
+    return data.map((row: any) => ({
+      id: row.id,
+      nombre: row.nombre,
+      porcentaje: row.porcentaje,
+      requierePrimeraCompra: row.requiere_primera_compra,
+      requiereEdadMinima: row.requiere_edad_minima,
+      activo: row.activo,
+    }));
+  }
+
+  async actualizarCupon(id: string, cambios: { porcentaje?: number; activo?: boolean }) {
+    const { error } = await this.supabase
+      .from('cupones')
+      .update({ porcentaje: cambios.porcentaje, activo: cambios.activo })
+      .eq('id', id);
+    return { error: error?.message ?? null };
+  }
+
+  async crearCupon(datos: { nombre: string; porcentaje: number; requiereEdadMinima: number }) {
+    const { error } = await this.supabase.from('cupones').insert({
+      nombre: datos.nombre,
+      porcentaje: datos.porcentaje,
+      requiere_edad_minima: datos.requiereEdadMinima,
+    });
+    return { error: error?.message ?? null };
   }
 }

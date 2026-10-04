@@ -4,6 +4,8 @@ Sistema web para un cine: cartelera, reseñas, funciones con asignación automá
 
 Trabajo práctico de Programación IV (UTN) — Nadia Moran.
 
+**App desplegada:** https://cine-moran.web.app
+
 ## Stack
 
 - **Angular 22**, componentes standalone, `provideZonelessChangeDetection` (todo el estado que cambia en pantalla usa signals).

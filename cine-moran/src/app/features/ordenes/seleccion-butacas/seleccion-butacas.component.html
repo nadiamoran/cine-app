@@ -7,7 +7,16 @@
     <h1>¡Compra confirmada!</h1>
     <p>{{ pelicula()?.nombre }} — {{ funcion()!.inicio | date: 'EEEE dd/MM HH:mm' }}</p>
     <p>{{ compraConfirmada()!.orden.cantidadButacas }} entrada(s) · Total: ${{ compraConfirmada()!.orden.total }}</p>
+    @if (compraConfirmada()!.cuponAplicado; as cupon) {
+      <p class="detalle-seleccion">Cupón aplicado: {{ cupon.nombre }} (-{{ cupon.porcentaje }}%)</p>
+    }
     <p>Butacas: {{ compraConfirmada()!.butacas.map(b => b.fila + b.numero).join(', ') }}</p>
+    @if (compraConfirmada()!.productos.length > 0) {
+      <p class="detalle-seleccion">
+        Candy bar: {{ compraConfirmada()!.productos.map(p => p.cantidad + 'x ' + p.nombre).join(', ') }}
+        (retirá con el mismo QR de la entrada)
+      </p>
+    }
     <p>Confirmación enviada (simulado) a {{ compraConfirmada()!.orden.email }}.</p>
 
     <button [disabled]="generandoPdf()" (click)="onDescargarPdf()">
@@ -67,6 +76,47 @@
       <span class="butaca butaca-seleccionada"></span> Seleccionada
       <span class="butaca butaca-ocupada"></span> Ocupada
     </div>
+
+    @if (combos().length > 0) {
+      <h2>Combos</h2>
+      <div class="grilla-candy">
+        @for (combo of combos(); track combo.id) {
+          <div class="item-candy item-candy-combo">
+            <span>{{ combo.nombre }}</span>
+            <span>${{ combo.precio }}</span>
+            <input
+              type="number"
+              min="0"
+              [value]="cantidadCombo(combo.id)"
+              (change)="onCambiarCantidadCombo(combo.id, $any($event.target).value)"
+            />
+          </div>
+        }
+      </div>
+    }
+
+    @if (productos().length > 0) {
+      <h2>Candy bar</h2>
+      @for (categoria of categorias(); track categoria.id) {
+        @if (productosDeCategoria(categoria.id).length > 0) {
+          <h3>{{ categoria.nombre }}</h3>
+          <div class="grilla-candy">
+            @for (producto of productosDeCategoria(categoria.id); track producto.id) {
+              <div class="item-candy">
+                <span>{{ producto.nombre }}</span>
+                <span>${{ producto.precio }}</span>
+                <input
+                  type="number"
+                  min="0"
+                  [value]="cantidadProducto(producto.id)"
+                  (change)="onCambiarCantidadProducto(producto.id, $any($event.target).value)"
+                />
+              </div>
+            }
+          </div>
+        }
+      }
+    }
 
     <div class="resumen-compra">
       <p>{{ cantidadSeleccionada() }} butaca(s) seleccionada(s) · Total: ${{ total() }}</p>

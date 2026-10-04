@@ -1,0 +1,34 @@
+<h1>Mi perfil</h1>
+
+@if (authService.currentUser(); as usuario) {
+  <div class="datos-perfil">
+    <p><strong>{{ usuario.nombre }} {{ usuario.apellido }}</strong></p>
+    <p>{{ usuario.email }}</p>
+  </div>
+
+  <div class="resumen-perfil">
+    <div class="tarjeta-metrica">
+      <span class="valor">{{ usuario.puntos }}</span>
+      <span class="etiqueta">Puntos acumulados</span>
+    </div>
+  </div>
+
+  <h2>Historial de compras</h2>
+
+  @if (cargando()) {
+    <p>Cargando...</p>
+  } @else if (historial().length === 0) {
+    <p>Todavía no compraste ninguna entrada.</p>
+  } @else {
+    @for (compra of historial(); track compra.id) {
+      <article class="compra-historial">
+        <strong>{{ compra.peliculaNombre }}</strong>
+        <span>{{ compra.funcionInicio | date: 'EEEE dd/MM HH:mm' }}</span>
+        <span>{{ compra.cantidadButacas }} entrada(s) · ${{ compra.total }}</span>
+        @if (compra.estado === 'cancelada') {
+          <span class="badge-cancelada">Cancelada</span>
+        }
+      </article>
+    }
+  }
+}

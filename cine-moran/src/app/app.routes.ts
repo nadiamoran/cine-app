@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { adminGuard } from './core/guards/admin.guard';
+import { authGuard } from './core/guards/auth.guard';
 import { empleadoGuard } from './core/guards/empleado.guard';
 import { confirmarSalidaGuard } from './core/guards/confirmar-salida.guard';
 
@@ -44,6 +45,13 @@ export const routes: Routes = [
   },
 
   {
+    path: 'perfil',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/perfil/perfil.component').then((m) => m.PerfilComponent),
+  },
+
+  {
     path: 'funcion/:id',
     canDeactivate: [confirmarSalidaGuard],
     loadComponent: () =>
@@ -81,6 +89,27 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/admin/crear-funcion/crear-funcion.component').then(
             (m) => m.CrearFuncionComponent,
+          ),
+      },
+      {
+        path: 'cupones',
+        loadComponent: () =>
+          import('./features/admin/gestionar-cupones/gestionar-cupones.component').then(
+            (m) => m.GestionarCuponesComponent,
+          ),
+      },
+      {
+        path: 'crear-producto',
+        loadComponent: () =>
+          import('./features/admin/crear-producto/crear-producto.component').then(
+            (m) => m.CrearProductoComponent,
+          ),
+      },
+      {
+        path: 'crear-combo',
+        loadComponent: () =>
+          import('./features/admin/crear-combo/crear-combo.component').then(
+            (m) => m.CrearComboComponent,
           ),
       },
     ],

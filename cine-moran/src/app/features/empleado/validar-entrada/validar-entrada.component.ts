@@ -15,6 +15,7 @@ export class ValidarEntradaComponent implements OnDestroy {
 
   validando = signal(false);
   resultado = signal<EntradaValidada | null>(null);
+  resultadoCandy = signal<{ nombre: string; cantidad: number }[] | null>(null);
   errorMsg = signal<string | null>(null);
 
   // el escaneo por cámara es una mejora: si el navegador no lo soporta, o el
@@ -46,6 +47,7 @@ export class ValidarEntradaComponent implements OnDestroy {
   private async validarCodigo(codigo: string) {
     this.errorMsg.set(null);
     this.resultado.set(null);
+    this.resultadoCandy.set(null);
     this.validando.set(true);
 
     const { entrada, error } = await this.validacionService.validar(codigo);
@@ -57,6 +59,33 @@ export class ValidarEntradaComponent implements OnDestroy {
     }
 
     this.resultado.set(entrada);
+    this.codigoForm.reset();
+  }
+
+  // Retira los productos de candy bar de la orden (con el mismo código de
+  // cualquiera de sus entradas). Independiente de "Validar": no hace falta
+  // haber validado la entrada para retirar el candy, ni al revés.
+  async onRetirarCandy() {
+    if (this.codigoForm.invalid) {
+      this.codigoForm.markAllAsTouched();
+      return;
+    }
+
+    this.errorMsg.set(null);
+    this.resultado.set(null);
+    this.resultadoCandy.set(null);
+    this.validando.set(true);
+
+    const codigo = this.codigoForm.getRawValue().codigo.trim();
+    const { items, error } = await this.validacionService.retirarCandy(codigo);
+    this.validando.set(false);
+
+    if (error) {
+      this.errorMsg.set(error);
+      return;
+    }
+
+    this.resultadoCandy.set(items);
     this.codigoForm.reset();
   }
 

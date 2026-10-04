@@ -1,0 +1,69 @@
+<h1>Cupones</h1>
+
+@if (cargando()) {
+  <p>Cargando...</p>
+} @else {
+  @for (cupon of cupones(); track cupon.id) {
+    <article class="cupon-item">
+      <div>
+        <strong>{{ cupon.nombre }}</strong>
+        <p class="detalle-seleccion">
+          @if (cupon.requierePrimeraCompra) {
+            Se aplica solo en la primera compra de cada usuario.
+          }
+          @if (cupon.requiereEdadMinima) {
+            Se aplica a usuarios de {{ cupon.requiereEdadMinima }} años o más.
+          }
+        </p>
+      </div>
+
+      <label>
+        Porcentaje
+        <input
+          type="number"
+          min="1"
+          max="100"
+          [value]="cupon.porcentaje"
+          #porcentajeInput
+          (change)="onGuardarPorcentaje(cupon, porcentajeInput.value)"
+        />
+      </label>
+
+      <button
+        type="button"
+        class="btn-secundario"
+        [disabled]="guardandoId() === cupon.id"
+        (click)="onToggleActivo(cupon)"
+      >
+        {{ cupon.activo ? 'Desactivar' : 'Activar' }}
+      </button>
+    </article>
+  }
+}
+
+<h2>Crear cupón por edad</h2>
+
+<form novalidate [formGroup]="nuevoCuponForm" (ngSubmit)="onCrearCupon()">
+  <label>
+    Nombre
+    <input type="text" formControlName="nombre" placeholder="Jubilados" />
+  </label>
+
+  <label>
+    Porcentaje de descuento
+    <input type="number" min="1" max="100" formControlName="porcentaje" />
+  </label>
+
+  <label>
+    Edad mínima para usarlo
+    <input type="number" min="1" formControlName="edadMinima" />
+  </label>
+
+  @if (errorMsg()) {
+    <p class="error">{{ errorMsg() }}</p>
+  }
+
+  <button type="submit" [disabled]="creando()">
+    {{ creando() ? 'Creando...' : 'Crear cupón' }}
+  </button>
+</form>

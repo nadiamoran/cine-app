@@ -73,6 +73,13 @@ export class AuthService {
     this.currentUser.set(null);
   }
 
+  // vuelve a traer el perfil actual (ej: despues de una compra, para que se
+  // vean los puntos nuevos sin tener que cerrar y volver a iniciar sesion)
+  async recargarPerfil() {
+    const usuario = this.currentUser();
+    if (usuario) await this.loadProfile(usuario.id);
+  }
+
   private async loadProfile(userId: string) {
     // el email no vive en "profiles" (esa tabla es de datos del cliente),
     // vive en auth.users; lo traemos aparte y lo sumamos al perfil.
@@ -92,6 +99,7 @@ export class AuthService {
         colorOjos: data.color_ojos,
         diasVacaciones: data.dias_vacaciones,
         rol: data.rol,
+        puntos: data.puntos,
       });
     }
   }

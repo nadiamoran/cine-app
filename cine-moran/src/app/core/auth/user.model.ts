@@ -24,4 +24,5 @@ export interface Profile {
   colorOjos: string;
   diasVacaciones: number;
   rol: 'cliente' | 'empleado' | 'administrador';
+  puntos: number;
 }

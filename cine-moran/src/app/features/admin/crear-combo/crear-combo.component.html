@@ -1,0 +1,37 @@
+<h1>Agregar combo</h1>
+
+<form novalidate [formGroup]="comboForm" (ngSubmit)="onSubmit()">
+  <label>
+    Nombre
+    <input type="text" formControlName="nombre" placeholder="Combo pareja" />
+  </label>
+
+  <label>
+    Precio fijo del combo
+    <input type="number" min="0" formControlName="precio" />
+  </label>
+
+  <label>Productos que incluye</label>
+  @for (producto of productos(); track producto.id) {
+    <div class="fila-combo-producto">
+      <span>{{ producto.nombre }} (${{ producto.precio }} c/u)</span>
+      <input
+        type="number"
+        min="0"
+        [value]="cantidadDe(producto.id)"
+        (change)="onCambiarCantidad(producto.id, $any($event.target).value)"
+      />
+    </div>
+  }
+
+  @if (errorMsg()) {
+    <p class="error">{{ errorMsg() }}</p>
+  }
+  @if (exito()) {
+    <p>Combo creado.</p>
+  }
+
+  <button type="submit" [disabled]="guardando()">
+    {{ guardando() ? 'Guardando...' : 'Guardar combo' }}
+  </button>
+</form>

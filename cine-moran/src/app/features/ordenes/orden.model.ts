@@ -17,7 +17,40 @@ export interface ButacaComprada {
   tipo: 'estandar' | 'vip' | 'accesible';
 }
 
+export interface CuponAplicado {
+  nombre: string;
+  porcentaje: number;
+}
+
+export interface ProductoComprado {
+  nombre: string;
+  cantidad: number;
+  precioUnitario: number;
+}
+
 export interface OrdenConButacas {
   orden: Orden;
   butacas: ButacaComprada[];
+  productos: ProductoComprado[];
+  cuponAplicado: CuponAplicado | null;
+}
+
+export interface Cupon {
+  id: string;
+  nombre: string;
+  porcentaje: number;
+  requierePrimeraCompra: boolean;
+  requiereEdadMinima: number | null;
+  activo: boolean;
+}
+
+// Para el historial de compras del perfil: una fila resumida por orden
+export interface CompraHistorial {
+  id: string;
+  peliculaNombre: string;
+  funcionInicio: string;
+  cantidadButacas: number;
+  total: number;
+  estado: 'confirmada' | 'cancelada';
+  createdAt: string;
 }

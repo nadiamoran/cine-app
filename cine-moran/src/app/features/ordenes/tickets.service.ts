@@ -52,6 +52,12 @@ export class TicketsService {
       );
       linea(`Butaca: ${butaca.fila}${butaca.numero} (${butaca.tipo})`);
       linea(`Precio: $${funcion.precio}`);
+
+      if (resultado.productos.length > 0) {
+        const detalleCandy = resultado.productos.map((p) => `${p.cantidad}x ${p.nombre}`).join(', ');
+        linea(`Candy bar: ${detalleCandy}`, 9);
+      }
+
       linea(`Orden: ${resultado.orden.id.slice(0, 8)}`, 9);
 
       if (pelicula.restriccionEdad !== 'sin_restriccion') {

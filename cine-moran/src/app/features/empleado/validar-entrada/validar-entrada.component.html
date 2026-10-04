@@ -20,9 +20,14 @@
     <input type="text" formControlName="codigo" placeholder="Pegá o escribí el código" />
   </label>
 
-  <button type="submit" [disabled]="validando()">
-    {{ validando() ? 'Validando...' : 'Validar' }}
-  </button>
+  <div class="acciones-validacion">
+    <button type="submit" [disabled]="validando()">
+      {{ validando() ? 'Procesando...' : 'Validar entrada' }}
+    </button>
+    <button type="button" class="btn-secundario" [disabled]="validando()" (click)="onRetirarCandy()">
+      Retirar candy bar
+    </button>
+  </div>
 </form>
 
 @if (errorMsg()) {
@@ -35,5 +40,14 @@
     <p>{{ resultado()!.pelicula }}</p>
     <p>{{ resultado()!.funcionInicio | date: 'EEEE dd/MM HH:mm' }}</p>
     <p>Butaca: {{ resultado()!.fila }}{{ resultado()!.numero }} ({{ resultado()!.tipo }})</p>
+  </div>
+}
+
+@if (resultadoCandy()) {
+  <div class="entrada-validada">
+    <h2>✔ Candy bar entregado</h2>
+    @for (item of resultadoCandy(); track item.nombre) {
+      <p>{{ item.cantidad }}x {{ item.nombre }}</p>
+    }
   </div>
 }
