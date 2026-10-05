@@ -1,4 +1,9 @@
-<h1>Agregar película</h1>
+<h1>Películas</h1>
+
+@if (!mostrarFormulario()) {
+  <button type="button" class="btn-nueva-pelicula" (click)="onNuevaPelicula()">+ Nueva película</button>
+} @else {
+<h2>Agregar película</h2>
 
 <form novalidate [formGroup]="peliculaForm" (ngSubmit)="onSubmit()">
   <label>
@@ -22,13 +27,36 @@
     }
   </label>
 
-  <label>
-    Géneros (separados por coma)
-    <input type="text" formControlName="generosTexto" placeholder="Acción, Drama" />
-    @if (peliculaForm.controls.generosTexto.touched && peliculaForm.controls.generosTexto.invalid) {
-      <small class="error">Ingresá al menos un género</small>
+  <div class="campo-generos">
+    <span>Géneros</span>
+    @if (generosDisponibles().length === 0) {
+      <small>Todavía no hay géneros cargados. Agregá uno abajo.</small>
     }
-  </label>
+    <div class="chips-generos">
+      @for (genero of generosDisponibles(); track genero) {
+        <button
+          type="button"
+          class="chip-genero"
+          [class.chip-genero-activo]="generoSeleccionado(genero)"
+          (click)="onToggleGenero(genero)"
+        >
+          {{ genero }}
+        </button>
+      }
+    </div>
+    <div class="nuevo-genero">
+      <input
+        type="text"
+        [formControl]="nuevoGenero"
+        placeholder="Otro género"
+        (keydown.enter)="$event.preventDefault(); onAgregarGenero()"
+      />
+      <button type="button" class="btn-secundario" (click)="onAgregarGenero()">Agregar</button>
+    </div>
+    @if (peliculaForm.controls.generos.touched && peliculaForm.controls.generos.invalid) {
+      <small class="error">Elegí al menos un género</small>
+    }
+  </div>
 
   <label>
     Restricción de edad
@@ -40,13 +68,22 @@
   </label>
 
   <label>
-    Fecha de estreno (dejar vacío si ya está en cartelera)
+    Estado
+    <select formControlName="estado">
+      @for (estado of estados; track estado.valor) {
+        <option [value]="estado.valor">{{ estado.etiqueta }}</option>
+      }
+    </select>
+  </label>
+
+  <label>
+    Fecha de estreno
     <input type="date" formControlName="fechaEstreno" />
   </label>
 
   <label>
     Imagen
-    <input type="file" accept="image/*" (change)="onArchivoSeleccionado($event)" />
+    <input #inputImagen type="file" accept="image/*" (change)="onArchivoSeleccionado($event)" />
   </label>
 
   @if (previewUrl()) {
@@ -60,4 +97,41 @@
   <button type="submit" [disabled]="guardando()">
     {{ guardando() ? 'Guardando...' : 'Guardar película' }}
   </button>
+  <button type="button" class="btn-secundario" (click)="onCancelar()">Cancelar</button>
 </form>
+}
+
+@if (cargando() && peliculas().length === 0) {
+  <p>Cargando...</p>
+} @else if (peliculas().length === 0) {
+  <p>Todavía no hay películas cargadas.</p>
+} @else {
+  @for (pelicula of peliculas(); track pelicula.id) {
+    <article class="cupon-item">
+      <div>
+        <strong>{{ pelicula.nombre }}</strong>
+        <p class="detalle-seleccion">
+          {{ pelicula.generos.join(', ') }}
+          <span [class]="'badge-estado estado-' + pelicula.estado">
+            {{ etiquetaEstado(pelicula.estado) }}
+          </span>
+        </p>
+      </div>
+
+      <label class="estado-pelicula">
+        Estado
+        <select
+          [value]="pelicula.estado"
+          [disabled]="guardandoId() === pelicula.id"
+          (change)="onCambiarEstado(pelicula, $any($event.target).value)"
+        >
+          @for (estado of estados; track estado.valor) {
+            <option [value]="estado.valor" [selected]="estado.valor === pelicula.estado">
+              {{ estado.etiqueta }}
+            </option>
+          }
+        </select>
+      </label>
+    </article>
+  }
+}

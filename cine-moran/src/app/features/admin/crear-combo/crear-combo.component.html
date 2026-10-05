@@ -1,14 +1,27 @@
-<h1>Agregar combo</h1>
+<h1>Combos</h1>
+
+@if (!mostrarFormulario()) {
+  <button type="button" class="btn-nueva-pelicula" (click)="onNuevoCombo()">+ Nuevo combo</button>
+} @else {
+<h2>Agregar combo</h2>
 
 <form novalidate [formGroup]="comboForm" (ngSubmit)="onSubmit()">
   <label>
     Nombre
     <input type="text" formControlName="nombre" placeholder="Combo pareja" />
+    @if (comboForm.controls.nombre.touched && comboForm.controls.nombre.invalid) {
+      <small class="error">El nombre es obligatorio</small>
+    }
   </label>
 
   <label>
     Precio fijo del combo
     <input type="number" min="0" formControlName="precio" />
+  </label>
+
+  <label>
+    Entradas generales incluidas (no VIP)
+    <input type="number" min="0" formControlName="entradasIncluidas" />
   </label>
 
   <label>Productos que incluye</label>
@@ -22,16 +35,67 @@
         (change)="onCambiarCantidad(producto.id, $any($event.target).value)"
       />
     </div>
+  } @empty {
+    <small>Todavía no hay productos cargados.</small>
+  }
+
+  <label>
+    Foto
+    <input #inputImagen type="file" accept="image/*" (change)="onArchivoSeleccionado($event)" />
+  </label>
+
+  @if (previewUrl()) {
+    <img [src]="previewUrl()" alt="Vista previa" class="preview-imagen" />
   }
 
   @if (errorMsg()) {
     <p class="error">{{ errorMsg() }}</p>
   }
-  @if (exito()) {
-    <p>Combo creado.</p>
-  }
 
   <button type="submit" [disabled]="guardando()">
     {{ guardando() ? 'Guardando...' : 'Guardar combo' }}
   </button>
+  <button type="button" class="btn-secundario" (click)="onCancelar()">Cancelar</button>
 </form>
+}
+
+@if (!mostrarFormulario() && errorMsg()) {
+  <p class="error">{{ errorMsg() }}</p>
+}
+@if (exito()) {
+  <p>{{ exito() }}</p>
+}
+
+@if (cargando() && combos().length === 0) {
+  <p>Cargando...</p>
+} @else if (combos().length === 0) {
+  <p>Todavía no hay combos cargados.</p>
+} @else {
+  @for (combo of combos(); track combo.id) {
+    <article class="cupon-item">
+      @if (combo.imagenUrl) {
+        <img [src]="combo.imagenUrl" [alt]="combo.nombre" class="miniatura-combo" />
+      }
+      <div>
+        <strong>{{ combo.nombre }}</strong> · ${{ combo.precio }}
+        <p class="detalle-seleccion">
+          {{ detalleCombo(combo) }}
+          <span [class]="'badge-estado ' + (combo.activo ? 'estado-habilitada' : 'estado-deshabilitada')">
+            {{ combo.activo ? 'Activo' : 'Inactivo' }}
+          </span>
+        </p>
+      </div>
+
+      <label class="estado-pelicula">
+        Estado
+        <select
+          [disabled]="guardandoId() === combo.id"
+          (change)="onCambiarEstado(combo, $any($event.target).value)"
+        >
+          <option value="activo" [selected]="combo.activo">Activo</option>
+          <option value="inactivo" [selected]="!combo.activo">Inactivo</option>
+        </select>
+      </label>
+    </article>
+  }
+}

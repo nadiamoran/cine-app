@@ -12,3 +12,12 @@ export interface Sala {
   id: string;
   nombre: string;
 }
+
+// para el listado de admin: cuántas butacas de cada tipo tiene la sala
+export interface SalaConButacas extends Sala {
+  habilitada: boolean;
+  totalButacas: number;
+  estandar: number;
+  vip: number;
+  accesibles: number;
+}

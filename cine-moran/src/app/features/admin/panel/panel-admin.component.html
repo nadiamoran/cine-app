@@ -1,0 +1,19 @@
+<h1>Panel de administración</h1>
+
+@if (authService.currentUser(); as usuario) {
+  <div class="datos-perfil">
+    <p><strong>{{ usuario.nombre }} {{ usuario.apellido }}</strong></p>
+    <p>{{ usuario.email }} · Administrador</p>
+  </div>
+}
+
+<h2>Administración</h2>
+
+<div class="grilla-panel">
+  @for (seccion of secciones; track seccion.ruta) {
+    <a class="tarjeta-panel" [routerLink]="seccion.ruta">
+      <span class="tarjeta-panel-titulo">{{ seccion.titulo }}</span>
+      <span class="tarjeta-panel-detalle">{{ seccion.detalle }}</span>
+    </a>
+  }
+</div>

@@ -9,6 +9,7 @@ export interface Producto {
   nombre: string;
   precio: number;
   activo: boolean;
+  imagenUrl: string | null;
 }
 
 export interface Combo {
@@ -16,4 +17,7 @@ export interface Combo {
   nombre: string;
   precio: number;
   activo: boolean;
+  entradasIncluidas: number; // entradas generales (no VIP) que trae el combo
+  imagenUrl: string | null;
+  productos: { nombre: string; cantidad: number }[];
 }

@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { SupabaseService } from '../../core/supabase.service'; // ajustá el path si difiere
-import { Pelicula } from './pelicula.model';
+import { EstadoPelicula, Pelicula } from './pelicula.model';
 
 @Injectable({ providedIn: 'root' })
 export class PeliculasService {
@@ -74,6 +74,7 @@ export class PeliculasService {
       restriccionEdad: row.restriccion_edad,
       ventas: row.ventas,
       fechaEstreno: row.fecha_estreno,
+      estado: row.estado ?? 'en_cartelera',
     };
   }
 
@@ -102,6 +103,7 @@ export class PeliculasService {
     restriccionEdad: string;
     fechaEstreno: string | null;
     imagenUrl: string | null;
+    estado: EstadoPelicula;
   }): Promise<{ error: string | null }> {
     const { error } = await this.supabase.from('peliculas').insert({
       nombre: datos.nombre,
@@ -111,9 +113,27 @@ export class PeliculasService {
       restriccion_edad: datos.restriccionEdad,
       fecha_estreno: datos.fechaEstreno || null,
       imagen_url: datos.imagenUrl,
+      estado: datos.estado,
     });
 
     return { error: error?.message ?? null };
+  }
+
+  async actualizarEstado(id: string, estado: EstadoPelicula): Promise<{ error: string | null }> {
+    const { error } = await this.supabase.from('peliculas').update({ estado }).eq('id', id);
+    return { error: error?.message ?? null };
+  }
+
+  async getGeneros(): Promise<string[]> {
+    // no hay tabla de generos: los saco de las peliculas ya cargadas
+    const { data, error } = await this.supabase.from('peliculas').select('generos');
+    if (error || !data) return [];
+
+    const set = new Set<string>();
+    for (const row of data) {
+      for (const g of row.generos ?? []) set.add(g);
+    }
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
   }
 
 

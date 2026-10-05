@@ -1,12 +1,9 @@
-<h1>Agregar producto</h1>
+<h1>Productos</h1>
 
-<form novalidate [formGroup]="nuevaCategoriaForm" (ngSubmit)="onCrearCategoria()">
-  <label>
-    Nueva categoría (opcional, si no está en la lista de abajo)
-    <input type="text" formControlName="nombre" placeholder="Ej: Combos individuales" />
-  </label>
-  <button type="submit">Agregar categoría</button>
-</form>
+@if (!mostrarFormulario()) {
+  <button type="button" class="btn-nueva-pelicula" (click)="onNuevoProducto()">+ Nuevo producto</button>
+} @else {
+<h2>{{ editandoId() ? 'Editar producto' : 'Agregar producto' }}</h2>
 
 <form novalidate [formGroup]="productoForm" (ngSubmit)="onSubmit()">
   <label>
@@ -17,11 +14,27 @@
         <option [value]="categoria.id">{{ categoria.nombre }}</option>
       }
     </select>
+    @if (productoForm.controls.categoriaId.touched && productoForm.controls.categoriaId.invalid) {
+      <small class="error">Elegí una categoría</small>
+    }
   </label>
+
+  <div class="nuevo-genero">
+    <input
+      type="text"
+      [formControl]="nuevaCategoria"
+      placeholder="Otra categoría"
+      (keydown.enter)="$event.preventDefault(); onCrearCategoria()"
+    />
+    <button type="button" class="btn-secundario" (click)="onCrearCategoria()">Agregar</button>
+  </div>
 
   <label>
     Nombre
     <input type="text" formControlName="nombre" placeholder="Pochoclos grandes" />
+    @if (productoForm.controls.nombre.touched && productoForm.controls.nombre.invalid) {
+      <small class="error">El nombre es obligatorio</small>
+    }
   </label>
 
   <label>
@@ -29,14 +42,65 @@
     <input type="number" min="0" formControlName="precio" />
   </label>
 
+  <label>
+    {{ imagenActual() ? 'Foto (elegí una solo si querés reemplazarla)' : 'Foto' }}
+    <input #inputImagen type="file" accept="image/*" (change)="onArchivoSeleccionado($event)" />
+  </label>
+
+  @if (previewUrl() ?? imagenActual(); as imagen) {
+    <img [src]="imagen" alt="Vista previa" class="preview-imagen" />
+  }
+
   @if (errorMsg()) {
     <p class="error">{{ errorMsg() }}</p>
   }
-  @if (exito()) {
-    <p>Producto creado.</p>
-  }
 
   <button type="submit" [disabled]="guardando()">
-    {{ guardando() ? 'Guardando...' : 'Guardar producto' }}
+    {{ guardando() ? 'Guardando...' : (editandoId() ? 'Guardar cambios' : 'Guardar producto') }}
   </button>
+  <button type="button" class="btn-secundario" (click)="onCancelar()">Cancelar</button>
 </form>
+}
+
+@if (!mostrarFormulario() && errorMsg()) {
+  <p class="error">{{ errorMsg() }}</p>
+}
+@if (exito()) {
+  <p>{{ exito() }}</p>
+}
+
+@if (cargando() && productos().length === 0) {
+  <p>Cargando...</p>
+} @else if (productos().length === 0) {
+  <p>Todavía no hay productos cargados.</p>
+} @else {
+  @for (producto of productos(); track producto.id) {
+    <article class="cupon-item">
+      @if (producto.imagenUrl) {
+        <img [src]="producto.imagenUrl" [alt]="producto.nombre" class="miniatura-combo" />
+      }
+      <div>
+        <strong>{{ producto.nombre }}</strong> · ${{ producto.precio }}
+        <p class="detalle-seleccion">
+          {{ nombreCategoria(producto.categoriaId) }}
+          <span [class]="'badge-estado ' + (producto.activo ? 'estado-habilitada' : 'estado-deshabilitada')">
+            {{ producto.activo ? 'Activo' : 'Dado de baja' }}
+          </span>
+        </p>
+      </div>
+
+      <label class="estado-pelicula">
+        Estado
+        <select
+          [disabled]="guardandoId() === producto.id"
+          (change)="onCambiarEstado(producto, $any($event.target).value)"
+        >
+          <option value="activo" [selected]="producto.activo">Activo</option>
+          <option value="baja" [selected]="!producto.activo">Dado de baja</option>
+        </select>
+      </label>
+
+      <button type="button" class="btn-secundario" (click)="onEditar(producto)">Editar</button>
+    </article>
+  }
+}

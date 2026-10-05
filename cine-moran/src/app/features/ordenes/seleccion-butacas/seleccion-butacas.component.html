@@ -78,19 +78,30 @@
     </div>
 
     @if (combos().length > 0) {
-      <h2>Combos</h2>
-      <div class="grilla-candy">
+      <h2>Combos especiales</h2>
+      <div class="grilla-combos">
         @for (combo of combos(); track combo.id) {
-          <div class="item-candy item-candy-combo">
-            <span>{{ combo.nombre }}</span>
-            <span>${{ combo.precio }}</span>
-            <input
-              type="number"
-              min="0"
-              [value]="cantidadCombo(combo.id)"
-              (change)="onCambiarCantidadCombo(combo.id, $any($event.target).value)"
-            />
-          </div>
+          <article class="tarjeta-combo" [class.tarjeta-combo-elegida]="cantidadCombo(combo.id) > 0">
+            @if (combo.imagenUrl) {
+              <img [src]="combo.imagenUrl" [alt]="combo.nombre" />
+            }
+            <div class="tarjeta-combo-cuerpo">
+              <h3>{{ combo.nombre }}</h3>
+              <p class="detalle-seleccion">{{ detalleCombo(combo) }}</p>
+              @if (combo.entradasIncluidas > 0) {
+                <p class="detalle-seleccion">Cubre entradas generales (no VIP)</p>
+              }
+              <div class="tarjeta-combo-pie">
+                <span class="precio-combo">${{ combo.precio }}</span>
+                <input
+                  type="number"
+                  min="0"
+                  [value]="cantidadCombo(combo.id)"
+                  (change)="onCambiarCantidadCombo(combo.id, $any($event.target).value)"
+                />
+              </div>
+            </div>
+          </article>
         }
       </div>
     }
@@ -103,14 +114,21 @@
           <div class="grilla-candy">
             @for (producto of productosDeCategoria(categoria.id); track producto.id) {
               <div class="item-candy">
-                <span>{{ producto.nombre }}</span>
-                <span>${{ producto.precio }}</span>
-                <input
-                  type="number"
-                  min="0"
-                  [value]="cantidadProducto(producto.id)"
-                  (change)="onCambiarCantidadProducto(producto.id, $any($event.target).value)"
-                />
+                <div class="item-candy-info">
+                  @if (producto.imagenUrl) {
+                    <img [src]="producto.imagenUrl" [alt]="producto.nombre" class="miniatura-producto" />
+                  }
+                  <span class="item-candy-nombre">{{ producto.nombre }}</span>
+                </div>
+                <div class="item-candy-pie">
+                  <span class="item-candy-precio">${{ producto.precio }}</span>
+                  <input
+                    type="number"
+                    min="0"
+                    [value]="cantidadProducto(producto.id)"
+                    (change)="onCambiarCantidadProducto(producto.id, $any($event.target).value)"
+                  />
+                </div>
               </div>
             }
           </div>
@@ -122,6 +140,17 @@
       <p>{{ cantidadSeleccionada() }} butaca(s) seleccionada(s) · Total: ${{ total() }}</p>
       @if (cantidadSeleccionada() > 0) {
         <p class="detalle-seleccion">Butacas: {{ etiquetaSeleccion() }}</p>
+      }
+      @if (entradasEnCombos() > 0 && !faltanButacasParaCombos()) {
+        <p class="detalle-seleccion">
+          {{ entradasEnCombos() }} entrada(s) incluida(s) en el combo
+        </p>
+      }
+      @if (faltanButacasParaCombos()) {
+        <p class="error">
+          Los combos elegidos incluyen {{ entradasEnCombos() }} entrada(s) general(es) y elegiste
+          {{ butacasGeneralesSeleccionadas() }} butaca(s) general(es). Las butacas VIP no entran en el combo.
+        </p>
       }
 
       @if (!authService.currentUser()) {
@@ -140,7 +169,7 @@
         <p class="error">{{ errorMsg() }}</p>
       }
 
-      <button [disabled]="cantidadSeleccionada() === 0 || comprando()" (click)="onConfirmar()">
+      <button [disabled]="cantidadSeleccionada() === 0 || faltanButacasParaCombos() || comprando()" (click)="onConfirmar()">
         {{ comprando() ? 'Procesando...' : 'Confirmar compra' }}
       </button>
     </div>

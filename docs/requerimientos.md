@@ -4,6 +4,7 @@
 **Alumna:** Nadia Moran
 **Cliente:** Empresario Importante (cine de un solo edificio con varias salas)
 **Fuente:** intercambio de 10 mails (01/01/2020 al 10/03/2020) + consigna del TP
+**Última actualización:** 04/10/2026 — se agregó el estado de implementación de cada requerimiento (sección 9)
 
 ---
 
@@ -179,9 +180,27 @@ Prioridad: **A** = imprescindible (lo pidió el cliente y define el sistema), **
 
 ---
 
-## 5. Modelo de datos preliminar (entidades)
+## 5. Modelo de datos
 
-`profiles` (usuario + rol) · `peliculas` · `generos` / `pelicula_generos` · `salas` · `butacas` (tipo: estándar / VIP / accesible) · `funciones` (película, sala, inicio, formato, idioma, precio) · `programaciones` (recurrencia) · `entradas` / `ordenes` · `orden_butacas` · `productos` · `categorias_producto` · `combos` · `orden_items` · `cupones` · `resenas` · `alertas_estreno` · `puntos_movimientos` · `recompensas` · `creditos_movimientos` · `activity_log`.
+Tablas que existen hoy en Supabase (creadas por `supabase/schema.sql` y las migraciones 001 a 018):
+
+| Tabla | Para qué |
+|---|---|
+| `profiles` | Datos del registro, rol (`cliente` / `empleado` / `administrador`) y puntos acumulados |
+| `peliculas` | Nombre, imagen, sinopsis, duración, géneros (`text[]`), restricción de edad, fecha de estreno, estado (`en_cartelera` / `proximamente` / `baja`) y ventas |
+| `resenas` | Una reseña por usuario y película (1 a 5 estrellas + comentario) |
+| `alertas_estreno` | Usuarios que pidieron aviso de una película próxima |
+| `salas` | Nombre y si está habilitada para recibir funciones nuevas |
+| `butacas` | Fila, bloque, número y tipo (`estandar` / `vip` / `accesible`) de cada butaca de cada sala |
+| `funciones` | Película, sala asignada, inicio, fin, formato, idioma y precio |
+| `ordenes` | Compra: función, usuario (o email si es anónimo), total y estado |
+| `orden_butacas` | Cada butaca comprada; su id es el código del QR. Guarda cuándo se validó |
+| `cupones` | Cupón de bienvenida (primera compra) y cupones por edad mínima, con porcentaje configurable |
+| `categorias_producto`, `productos` | Candy bar: categorías y productos (con foto y estado activo / dado de baja) |
+| `combos`, `combo_productos` | Combos a precio fijo: entradas generales incluidas, productos, foto y estado |
+| `orden_productos` | Productos y combos de cada compra; guarda cuándo se retiraron en el candy bar |
+
+Diferencias con el modelo preliminar: los géneros quedaron como un arreglo dentro de `peliculas` (no hizo falta una tabla aparte), y la recurrencia no se guarda como `programaciones`: se generan todas las funciones juntas en el momento (ver S-11). Todavía no existen `recompensas`, `puntos_movimientos`, `creditos_movimientos` ni `activity_log`, porque corresponden a requerimientos pendientes (sección 9).
 
 ---
 
@@ -201,8 +220,13 @@ Estos puntos son ambiguos o se contradicen en los mails. Dejarlos escritos sirve
 | S-8 | Menores de 13 en película +13 y menores de 18 en +18: ¿pueden ir con adulto? | No pueden **comprar**; sí pueden asistir acompañados de un adulto si lo compra el adulto. | Sí |
 | S-9 | "Más vendidas": ¿por entradas o por monto? | Por **cantidad de entradas** vendidas. | No |
 | S-10 | Precios de entradas (estándar, VIP, preventa): el cliente no los define. | Se guardan configurables en la base; VIP = recargo sobre el precio base. | Sí |
-| S-11 | Función recurrente: ¿hasta cuándo se repite? | Se define **rango de fechas** al crearla. | Sí |
+| S-11 | Función recurrente: ¿hasta cuándo se repite? | Se define **rango de fechas** al crearla (máximo 60 días), con días de la semana y horarios. Antes de crear se muestra una **vista previa** con la sala de cada función y las que no tienen lugar. | Sí |
 | S-12 | Un usuario anónimo no tiene cuenta: ¿cómo recibe el PDF? | Se pide un **email** en el checkout y se descarga el PDF en la pantalla de confirmación. | Sí |
+| S-13 | Combos "entrada + pochoclos + bebida": ¿qué entrada cubren? | El combo indica cuántas **entradas generales** incluye. El cliente elige sus butacas como siempre y, si elige el combo, esas entradas no se cobran sueltas: paga solo el precio del combo. **Las butacas VIP no entran en el combo.** | No |
+| S-14 | ¿Qué pasa con una función que ya tiene entradas vendidas si el admin la edita o la borra? | No se puede **eliminar**. Se puede **editar**, pero no cambia de sala (las butacas compradas son de esa sala): solo se acepta el cambio si esa sala sigue libre. | No |
+| S-15 | ¿Qué pasa al deshabilitar una sala? | No recibe **funciones nuevas**; las que ya tenía programadas se mantienen. | No |
+| S-16 | Dar de baja un producto o un combo. | No se borra (las compras viejas lo referencian): queda **inactivo**, no se vende y no se puede sumar a combos nuevos. | No |
+| S-17 | El admin pidió elegir el género "de los ya cargados". | Los géneros disponibles se toman de las películas existentes; si hace falta uno nuevo, se agrega desde el mismo formulario. | No |
 
 ---
 
@@ -227,3 +251,78 @@ Estos puntos son ambiguos o se contradicen en los mails. Dejarlos escritos sirve
 | Aplicación con los temas vistos en clase | Sección 3 (RNF-04/05/06), etapas 1–5 |
 | Defensa oral | Sección 6 (supuestos y decisiones) |
 | App desplegada + GitHub + README | RNF-07, etapa 6 |
+
+---
+
+## 9. Estado de implementación
+
+Referencias: ✅ implementado · 🟡 parcial · ❌ pendiente.
+
+### 9.1 Requerimientos funcionales
+
+| ID | Estado | Detalle |
+|---|---|---|
+| RF-01 | ✅ | Alta de película con nombre, duración, imagen (Supabase Storage) y sinopsis. |
+| RF-02 | ✅ | Varios géneros por película, elegidos de los ya cargados (S-17). |
+| RF-03 | ✅ | Sin restricción / +13 / +18. |
+| RF-04 | 🟡 | La cartelera se ordena por `peliculas.ventas`, pero ese contador todavía no se actualiza al comprar y las 3 primeras no se destacan visualmente. |
+| RF-05 | ✅ | Buscador por nombre + filtro por género (contempla varios géneros). Los filtros quedan en la URL. |
+| RF-06 | ✅ | Sección Próximamente (películas con fecha de estreno futura). |
+| RF-07 | 🟡 | Se puede activar y cancelar la alerta; todavía no se envía la notificación. |
+| RF-08 | ✅ | Detalle con horarios, formato, idioma, sala, precio, reseñas y promedio. |
+| RF-09 | ✅ | 1 a 5 estrellas + comentario; solo quien ya vio la película (regla en la base). |
+| RF-10 | ✅ | Promedio en el detalle. |
+| RF-11 | ✅ | Reseñas visibles antes de comprar. |
+| RF-12 | ❌ | "Mis películas". |
+| RF-13 | ✅ | Las salas se crean con `crear_sala()`: 20 filas A–T, bloques 4/20/4. |
+| RF-14 | ✅ | Fila accesible 2/10/2 en lugar de J–K, con color propio en el mapa. |
+| RF-15 | 🟡 | Filas R–S–T VIP con marca visual. Falta el **precio mayor** y el aviso explícito antes de pagar. |
+| RF-16 | 🟡 | Pantalla Salas: alta de salas y habilitar / deshabilitar. La distribución de butacas es fija (la definió el cliente) y no se edita. |
+| RF-17 | ✅ | Alta, edición y baja de funciones (película, fecha, hora, formato, idioma, precio). |
+| RF-18 | ✅ | "Programar funciones": días de la semana + horarios + período, con vista previa (S-11). |
+| RF-19 | ✅ | Sala asignada por la base (`asignar_funcion`, `editar_funcion`, `programar_funciones`); nunca se superponen. |
+| RF-20 | ✅ | 30 minutos de margen, calculados con la duración de la película. |
+| RF-21 | 🟡 | El admin asigna un **estado** a cada película (En cartelera / Próximamente / Baja), pero la cartelera pública todavía se arma con `visible_home` y la fecha de estreno, no con ese estado. |
+| RF-22 | ✅ | Elegir función → butacas → confirmar (pago simulado, S-2). |
+| RF-23 | ❌ | Las butacas ocupadas se cargan al entrar; falta Supabase Realtime. |
+| RF-24 | ✅ | Compra anónima con email. |
+| RF-25 | ✅ | Validado en Angular y en la base (`crear_orden`). |
+| RF-26 | ✅ | Aviso en el detalle y en el PDF ("debe ir acompañado de un adulto"). |
+| RF-27 | ✅ | PDF con una página y un QR por butaca. |
+| RF-28 | 🟡 | El cupón se aplica solo. Falta pagar con puntos o crédito. |
+| RF-29 | ❌ | Preventa. |
+| RF-30 | ✅ | Productos con categoría, foto, edición y baja. |
+| RF-31 | ✅ | Productos y combos en la misma compra. |
+| RF-32 | ✅ | Retiro del candy bar con el mismo código (`retirar_candy`). |
+| RF-33 | ✅ | Combos con entradas generales incluidas, productos, foto y precio fijo; destacados en la compra (S-13). |
+| RF-34 | ✅ | Registro con todos los datos pedidos. |
+| RF-35 | ✅ | Login / logout con Supabase Auth. |
+| RF-36 | 🟡 | Perfil con datos, puntos e historial de compras. Faltan historial de canjes y crédito. El administrador tiene un panel propio en lugar de este perfil. |
+| RF-37 | ✅ | Cupón "Bienvenida" 20 % en la primera compra. |
+| RF-38 | ✅ | Pantalla Cupones: cambiar porcentaje y activar / desactivar. |
+| RF-39 | ✅ | Cupones por edad mínima (configurable, ej. 50). |
+| RF-40 | ✅ | 1 punto por peso, solo usuarios registrados. |
+| RF-41 | ❌ | Canje de puntos. |
+| RF-42 | ❌ | Tabla de recompensas configurable. |
+| RF-43 | ✅ | No existe ninguna operación que mueva puntos entre usuarios. |
+| RF-44 a RF-47 | ❌ | Cancelación con crédito. |
+| RF-48 | ✅ | Pantalla "Validar entrada" (cámara o código) y "Retirar candy bar". |
+| RF-49 | ✅ | Ingreso manual del código. |
+| RF-50 | ✅ | Una vez validada o retirada, el código se rechaza. |
+| RF-51 | ✅ | Panel de administración con acceso a Películas, Funciones, Salas, Productos, Combos, Cupones y Validar entrada. |
+| RF-52 a RF-55 | ❌ | Reportes, exportación, gráficos y log de actividad (van en el panel de administración). |
+
+### 9.2 Requerimientos no funcionales
+
+| ID | Estado | Detalle |
+|---|---|---|
+| RNF-01 | ✅ | Pantallas de admin con el mismo patrón: listado + botón "Nuevo" + formulario que se abre arriba. |
+| RNF-02 | 🟡 | "Programar funciones" usa chips de días, chips de horarios y atajos de período. Quedan selectores de fecha comunes en estreno, función única y registro. |
+| RNF-03 | ✅ | Estética propia (tema oscuro, dorado, tipografía de marquesina). |
+| RNF-04 | ✅ | Angular standalone, signals, zoneless, Reactive Forms, guards, lazy loading. |
+| RNF-05 | 🟡 | Base de datos, Auth, Storage y funciones SQL. Falta Realtime (RF-23). |
+| RNF-06 | ✅ | Manifest + service worker. |
+| RNF-07 | ✅ | Firebase Hosting (https://cine-moran.web.app), GitHub y README. |
+| RNF-08 | ✅ | RLS y funciones `security definer` en la base. |
+| RNF-09 | ✅ | `unique(funcion_id, butaca_id)` y compra en una sola transacción. |
+| RNF-10 | 🟡 | Grillas que se adaptan al ancho; no hay ajustes específicos para celular. |

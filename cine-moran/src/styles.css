@@ -541,22 +541,47 @@ button:disabled {
 
 .item-candy {
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
+  flex-direction: column;
+  gap: 0.6rem;
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 8px;
-  padding: 0.6rem 0.9rem;
+  padding: 0.75rem 0.9rem;
   font-size: 0.9rem;
 }
 
-.item-candy span:first-child {
-  flex: 1;
+/* arriba: foto + nombre */
+.item-candy-info {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
 }
 
-.item-candy input {
-  width: 3.5rem;
-  padding: 0.3rem;
+.item-candy-nombre {
+  flex: 1;
+  min-width: 0;
+}
+
+/* abajo: precio + cantidad */
+.item-candy-pie {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.item-candy-precio {
+  font-weight: 600;
+  color: var(--dorado);
+  white-space: nowrap;
+}
+
+.item-candy input,
+.tarjeta-combo-pie input {
+  width: 4.5rem;
+  flex-shrink: 0;
+  padding: 0.3rem 0.4rem;
+  text-align: center;
 }
 
 .item-candy-combo {
@@ -575,7 +600,9 @@ button:disabled {
 }
 
 .fila-combo-producto input {
-  width: 4rem;
+  width: 4.5rem;
+  flex-shrink: 0;
+  text-align: center;
 }
 
 .cupon-item {
@@ -633,4 +660,247 @@ button:disabled {
   max-width: 200px;
   border-radius: 6px;
   display: block;
+}
+
+/* ---------- admin de películas ---------- */
+
+.cupon-item .estado-pelicula {
+  width: 170px;
+  flex-shrink: 0;
+}
+
+.estado-pelicula select {
+  width: 100%;
+}
+
+.btn-nueva-pelicula {
+  margin-bottom: 1.5rem;
+}
+
+.badge-estado {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.1rem 0.45rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  border-radius: 4px;
+  color: #14151a;
+}
+
+.estado-en_cartelera { background: var(--verde); }
+.estado-proximamente { background: var(--dorado); }
+.estado-baja { background: var(--border); color: var(--text-muted); }
+
+.campo-generos {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.chips-generos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.chip-genero {
+  padding: 0.3rem 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text);
+}
+
+.chip-genero:hover:not(:disabled) {
+  background: transparent;
+  border-color: var(--dorado);
+}
+
+.chip-genero-activo,
+.chip-genero-activo:hover:not(:disabled) {
+  background: var(--dorado);
+  border-color: var(--dorado);
+  color: #14151a;
+}
+
+.nuevo-genero {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.nuevo-genero input {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ---------- admin de funciones ---------- */
+
+.acciones-funcion {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.btn-eliminar:hover:not(:disabled) {
+  border-color: var(--rojo);
+  color: var(--rojo);
+}
+
+.estado-habilitada { background: var(--verde); }
+.estado-deshabilitada { background: var(--border); color: var(--text-muted); }
+
+/* ---------- combos especiales ---------- */
+
+.miniatura-combo {
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.grilla-combos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.tarjeta-combo {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-card);
+  border: 1px solid var(--dorado);
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+}
+
+.tarjeta-combo-elegida {
+  box-shadow: 0 0 0 2px var(--dorado), 0 8px 20px rgba(0, 0, 0, 0.3);
+}
+
+.tarjeta-combo img {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+  display: block;
+}
+
+.tarjeta-combo-cuerpo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.9rem 1rem 1rem;
+  flex: 1;
+}
+
+.tarjeta-combo-cuerpo h3 {
+  margin: 0;
+}
+
+.tarjeta-combo-cuerpo p {
+  margin: 0;
+}
+
+.tarjeta-combo-pie {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: auto;
+  padding-top: 0.5rem;
+}
+
+.precio-combo {
+  font-family: var(--fuente-marquesina);
+  font-size: 1.6rem;
+  color: var(--dorado);
+}
+
+
+.miniatura-producto {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+/* ---------- programar funciones ---------- */
+
+.vista-previa-funciones {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.vista-previa-funciones ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 220px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.vista-previa-funciones li {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.4rem 0.7rem;
+  color: var(--text);
+}
+
+.vista-previa-funciones li + li {
+  border-top: 1px solid var(--border);
+}
+
+.vista-previa-funciones li.sin-sala span:last-child {
+  color: var(--rojo);
+  font-weight: 600;
+}
+
+/* ---------- panel de administración ---------- */
+
+.grilla-panel {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.tarjeta-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 1.1rem 1.25rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  text-decoration: none;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+
+.tarjeta-panel:hover {
+  border-color: var(--dorado);
+  transform: translateY(-2px);
+}
+
+.tarjeta-panel-titulo {
+  font-family: var(--fuente-marquesina);
+  font-size: 1.4rem;
+  color: var(--dorado);
+}
+
+.tarjeta-panel-detalle {
+  font-size: 0.85rem;
+  color: var(--text-muted);
 }

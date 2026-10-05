@@ -78,6 +78,13 @@ export const routes: Routes = [
     canActivateChild: [adminGuard],
     children: [
       {
+        path: '',
+        loadComponent: () =>
+          import('./features/admin/panel/panel-admin.component').then(
+            (m) => m.PanelAdminComponent,
+          ),
+      },
+      {
         path: 'crear-pelicula',
         loadComponent: () =>
           import('./features/admin/crear-pelicula/crear-pelicula.component').then(
@@ -89,6 +96,13 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/admin/crear-funcion/crear-funcion.component').then(
             (m) => m.CrearFuncionComponent,
+          ),
+      },
+      {
+        path: 'salas',
+        loadComponent: () =>
+          import('./features/admin/gestionar-salas/gestionar-salas.component').then(
+            (m) => m.GestionarSalasComponent,
           ),
       },
       {

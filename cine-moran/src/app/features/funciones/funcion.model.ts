@@ -11,4 +11,5 @@ export interface Funcion {
   formato: Formato;
   idioma: Idioma;
   precio: number;
+  nombrePelicula?: string; // solo cuando se trae con el join a peliculas (listado de admin)
 }

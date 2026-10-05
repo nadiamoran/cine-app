@@ -17,6 +17,7 @@ import { agruparPorFilaYBloque, calcularAnchosBloque, anchoBloqueRem } from '../
 import { ComponentePuedeSalir } from '../../../core/guards/confirmar-salida.guard';
 import { CandyBarService } from '../../candy-bar/candy-bar.service';
 import { Categoria, Producto, Combo } from '../../candy-bar/producto.model';
+import { detalleCombo } from '../../candy-bar/combo.utils';
 
 @Component({
   selector: 'app-seleccion-butacas',
@@ -25,6 +26,8 @@ import { Categoria, Producto, Combo } from '../../candy-bar/producto.model';
   templateUrl: './seleccion-butacas.component.html',
 })
 export class SeleccionButacasComponent implements OnInit, ComponentePuedeSalir {
+  readonly detalleCombo = detalleCombo;
+
   cargando = signal(true);
   funcion = signal<Funcion | null>(null);
   pelicula = signal<Pelicula | null>(null);
@@ -69,8 +72,30 @@ export class SeleccionButacasComponent implements OnInit, ComponentePuedeSalir {
     return suma;
   });
 
+  // los combos cubren entradas generales, no VIP
+  butacasGeneralesSeleccionadas = computed(() => {
+    const ids = this.seleccionadas();
+    return this.butacas().filter((b) => ids.has(b.id) && b.tipo !== 'vip').length;
+  });
+
+  entradasEnCombos = computed(() => {
+    let suma = 0;
+    for (const [id, cantidad] of this.cantidadesCombos()) {
+      suma += (this.combos().find((c) => c.id === id)?.entradasIncluidas ?? 0) * cantidad;
+    }
+    return suma;
+  });
+
+  faltanButacasParaCombos = computed(
+    () => this.entradasEnCombos() > this.butacasGeneralesSeleccionadas(),
+  );
+
+  // las entradas que trae un combo no se cobran sueltas: se paga el precio del combo
+  // (el total real lo vuelve a calcular crear_orden en la base)
   total = computed(
-    () => this.cantidadSeleccionada() * (this.funcion()?.precio ?? 0) + this.totalCandy(),
+    () =>
+      (this.cantidadSeleccionada() - this.entradasEnCombos()) * (this.funcion()?.precio ?? 0) +
+      this.totalCandy(),
   );
 
   // detalle de qué butacas eligió (ej: "J3, J4, R5"), para que confirme antes
@@ -228,6 +253,10 @@ export class SeleccionButacasComponent implements OnInit, ComponentePuedeSalir {
 
     if (this.cantidadSeleccionada() === 0) {
       this.errorMsg.set('Elegí al menos una butaca.');
+      return;
+    }
+
+    if (this.faltanButacasParaCombos()) {
       return;
     }
 

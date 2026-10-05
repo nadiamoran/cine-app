@@ -1,0 +1,65 @@
+<h1>Salas</h1>
+
+@if (!mostrarFormulario()) {
+  <button type="button" class="btn-nueva-pelicula" (click)="onNuevaSala()">+ Nueva sala</button>
+} @else {
+<h2>Agregar sala</h2>
+
+<form novalidate [formGroup]="salaForm" (ngSubmit)="onSubmit()">
+  <label>
+    Nombre
+    <input type="text" formControlName="nombre" placeholder="Sala 4" />
+    @if (salaForm.controls.nombre.touched && salaForm.controls.nombre.invalid) {
+      <small class="error">El nombre es obligatorio</small>
+    }
+  </label>
+
+  @if (errorMsg()) {
+    <p class="error">{{ errorMsg() }}</p>
+  }
+
+  <button type="submit" [disabled]="guardando()">
+    {{ guardando() ? 'Creando...' : 'Crear sala' }}
+  </button>
+  <button type="button" class="btn-secundario" (click)="onCancelar()">Cancelar</button>
+</form>
+}
+
+@if (!mostrarFormulario() && errorMsg()) {
+  <p class="error">{{ errorMsg() }}</p>
+}
+@if (exito()) {
+  <p>{{ exito() }}</p>
+}
+
+@if (cargando() && salas().length === 0) {
+  <p>Cargando...</p>
+} @else if (salas().length === 0) {
+  <p>Todavía no hay salas cargadas.</p>
+} @else {
+  @for (sala of salas(); track sala.id) {
+    <article class="cupon-item">
+      <div>
+        <strong>{{ sala.nombre }}</strong>
+        <p class="detalle-seleccion">
+          {{ sala.totalButacas }} butacas: {{ sala.estandar }} estándar · {{ sala.vip }} VIP ·
+          {{ sala.accesibles }} accesibles
+          <span [class]="'badge-estado ' + (sala.habilitada ? 'estado-habilitada' : 'estado-deshabilitada')">
+            {{ sala.habilitada ? 'Habilitada' : 'Deshabilitada' }}
+          </span>
+        </p>
+      </div>
+
+      <label class="estado-pelicula">
+        Estado
+        <select
+          [disabled]="guardandoId() === sala.id"
+          (change)="onCambiarEstado(sala, $any($event.target).value)"
+        >
+          <option value="habilitada" [selected]="sala.habilitada">Habilitada</option>
+          <option value="deshabilitada" [selected]="!sala.habilitada">Deshabilitada</option>
+        </select>
+      </label>
+    </article>
+  }
+}

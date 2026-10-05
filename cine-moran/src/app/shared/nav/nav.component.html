@@ -5,11 +5,12 @@
     <a routerLink="/">Cartelera</a>
     <a routerLink="/proximamente">Próximamente</a>
     @if (authService.currentUser()?.rol === 'administrador') {
-      <a routerLink="/admin/crear-pelicula">+ Película</a>
-      <a routerLink="/admin/crear-funcion">+ Función</a>
+      <a routerLink="/admin/crear-pelicula">Películas</a>
+      <a routerLink="/admin/crear-funcion">Funciones</a>
+      <a routerLink="/admin/salas">Salas</a>
       <a routerLink="/admin/cupones">Cupones</a>
-      <a routerLink="/admin/crear-producto">+ Producto</a>
-      <a routerLink="/admin/crear-combo">+ Combo</a>
+      <a routerLink="/admin/crear-producto">Productos</a>
+      <a routerLink="/admin/crear-combo">Combos</a>
     }
     @if (authService.currentUser()?.rol === 'empleado' || authService.currentUser()?.rol === 'administrador') {
       <a routerLink="/empleado/validar">Validar entrada</a>
@@ -18,7 +19,10 @@
 
   <div class="nav-sesion">
     @if (authService.currentUser()) {
-      <a routerLink="/perfil">Hola, {{ authService.currentUser()!.nombre }}</a>
+      <!-- el admin no tiene perfil de cliente: va a su panel -->
+      <a [routerLink]="authService.currentUser()!.rol === 'administrador' ? '/admin' : '/perfil'">
+        Hola, {{ authService.currentUser()!.nombre }}
+      </a>
       <button class="btn-secundario" (click)="logout()">Cerrar sesión</button>
     } @else {
       <a routerLink="/login">Ingresar</a>

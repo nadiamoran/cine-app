@@ -1,4 +1,144 @@
-<h1>Agregar función</h1>
+<h1>Funciones</h1>
+
+@if (!mostrarFormulario() && !mostrarProgramacion()) {
+  <div class="acciones-funcion btn-nueva-pelicula">
+    <button type="button" (click)="onProgramarFunciones()">+ Programar funciones</button>
+    <button type="button" class="btn-secundario" (click)="onNuevaFuncion()">+ Función única</button>
+  </div>
+} @else if (mostrarProgramacion()) {
+<h2>Programar funciones</h2>
+
+<p>Elegí los días y horarios: el sistema crea todas las funciones del período y les asigna sala sola.</p>
+
+<form novalidate [formGroup]="programacionForm" (ngSubmit)="onVistaPrevia()">
+  <label>
+    Película
+    <select formControlName="peliculaId">
+      <option value="" disabled>Elegí una película</option>
+      @for (pelicula of peliculas(); track pelicula.id) {
+        <option [value]="pelicula.id">{{ pelicula.nombre }}</option>
+      }
+    </select>
+    @if (programacionForm.controls.peliculaId.touched && programacionForm.controls.peliculaId.invalid) {
+      <small class="error">Elegí una película</small>
+    }
+  </label>
+
+  <div class="campo-generos">
+    <span>Días de la semana</span>
+    <div class="chips-generos">
+      @for (dia of diasSemana; track dia.valor) {
+        <button
+          type="button"
+          class="chip-genero"
+          [class.chip-genero-activo]="diaElegido(dia.valor)"
+          (click)="onToggleDia(dia.valor)"
+        >
+          {{ dia.etiqueta }}
+        </button>
+      }
+    </div>
+  </div>
+
+  <div class="campo-generos">
+    <span>Horarios</span>
+    @if (horasElegidas().length > 0) {
+      <div class="chips-generos">
+        @for (hora of horasElegidas(); track hora) {
+          <button type="button" class="chip-genero chip-genero-activo" (click)="onQuitarHora(hora)">
+            {{ hora }} ✕
+          </button>
+        }
+      </div>
+    }
+    <div class="nuevo-genero">
+      <input
+        type="time"
+        [formControl]="nuevaHora"
+        (keydown.enter)="$event.preventDefault(); onAgregarHora()"
+      />
+      <button type="button" class="btn-secundario" (click)="onAgregarHora()">Agregar</button>
+    </div>
+  </div>
+
+  <label>
+    Desde
+    <input type="date" formControlName="desde" />
+  </label>
+
+  <div class="campo-generos">
+    <span>Hasta</span>
+    <div class="chips-generos">
+      <button type="button" class="chip-genero" (click)="onAtajoPeriodo('2-semanas')">2 semanas</button>
+      <button type="button" class="chip-genero" (click)="onAtajoPeriodo('1-mes')">1 mes</button>
+      <button type="button" class="chip-genero" (click)="onAtajoPeriodo('fin-de-mes')">Hasta fin de mes</button>
+    </div>
+    <input type="date" formControlName="hasta" />
+  </div>
+
+  <label>
+    Formato
+    <select formControlName="formato">
+      <option value="2d">2D</option>
+      <option value="3d">3D</option>
+      <option value="4d">4D</option>
+      <option value="5d">5D</option>
+    </select>
+  </label>
+
+  <label>
+    Idioma
+    <select formControlName="idioma">
+      <option value="castellano">Castellano</option>
+      <option value="subtitulada">Subtitulada</option>
+    </select>
+  </label>
+
+  <label>
+    Precio
+    <input type="number" formControlName="precio" min="0" step="1" />
+  </label>
+
+  @if (vistaPrevia(); as previa) {
+    <div class="vista-previa-funciones">
+      <span>Se van a crear {{ cantidadConSala() }} función(es)</span>
+      <ul>
+        @for (item of previa; track item.inicio) {
+          <li [class.sin-sala]="!item.salaNombre">
+            <span>{{ item.inicio | date: 'dd/MM HH:mm' }}</span>
+            <span>{{ item.salaNombre ?? 'Sin sala libre' }}</span>
+          </li>
+        }
+      </ul>
+      @if (cantidadSinSala() > 0) {
+        <small class="error">
+          {{ cantidadSinSala() }} no tienen sala libre en ese horario y no se van a crear.
+        </small>
+      }
+    </div>
+  }
+
+  @if (errorMsg()) {
+    <p class="error">{{ errorMsg() }}</p>
+  }
+
+  @if (!vistaPrevia()) {
+    <button type="submit" [disabled]="guardando()">
+      {{ guardando() ? 'Calculando...' : 'Ver vista previa' }}
+    </button>
+  } @else {
+    <button
+      type="button"
+      [disabled]="guardando() || cantidadConSala() === 0"
+      (click)="onConfirmarProgramacion()"
+    >
+      {{ guardando() ? 'Creando...' : 'Crear ' + cantidadConSala() + ' función(es)' }}
+    </button>
+  }
+  <button type="button" class="btn-secundario" (click)="onCancelarProgramacion()">Cancelar</button>
+</form>
+} @else {
+<h2>{{ editandoId() ? 'Editar función' : 'Agregar función' }}</h2>
 
 <p>La sala se asigna sola: el sistema busca la primera que esté libre en ese horario.</p>
 
@@ -52,11 +192,49 @@
   @if (errorMsg()) {
     <p class="error">{{ errorMsg() }}</p>
   }
-  @if (exito()) {
-    <p>Función creada.</p>
-  }
 
   <button type="submit" [disabled]="guardando()">
-    {{ guardando() ? 'Guardando...' : 'Guardar función' }}
+    {{ guardando() ? 'Guardando...' : (editandoId() ? 'Guardar cambios' : 'Guardar función') }}
   </button>
+  <button type="button" class="btn-secundario" (click)="onCancelar()">Cancelar</button>
 </form>
+}
+
+@if (!mostrarFormulario() && !mostrarProgramacion() && errorMsg()) {
+  <p class="error">{{ errorMsg() }}</p>
+}
+@if (exito()) {
+  <p>{{ exito() }}</p>
+}
+
+@if (cargando() && funciones().length === 0) {
+  <p>Cargando...</p>
+} @else if (funciones().length === 0) {
+  <p>No hay funciones programadas.</p>
+} @else {
+  @for (funcion of funciones(); track funcion.id) {
+    <article class="cupon-item">
+      <div>
+        <strong>{{ funcion.nombrePelicula }}</strong>
+        <p class="detalle-seleccion">
+          {{ funcion.inicio | date: 'dd/MM/yyyy HH:mm' }} · {{ funcion.nombreSala }} ·
+          {{ funcion.formato.toUpperCase() }} ·
+          {{ funcion.idioma === 'castellano' ? 'Castellano' : 'Subtitulada' }} ·
+          ${{ funcion.precio }}
+        </p>
+      </div>
+
+      <div class="acciones-funcion">
+        <button type="button" class="btn-secundario" (click)="onEditar(funcion)">Editar</button>
+        <button
+          type="button"
+          class="btn-secundario btn-eliminar"
+          [disabled]="eliminandoId() === funcion.id"
+          (click)="onEliminar(funcion)"
+        >
+          {{ eliminandoId() === funcion.id ? 'Eliminando...' : 'Eliminar' }}
+        </button>
+      </div>
+    </article>
+  }
+}
