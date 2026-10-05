@@ -77,6 +77,11 @@
       <span class="butaca butaca-ocupada"></span> Ocupada
     </div>
 
+    <!-- las butacas ocupadas se actualizan solas (Supabase Realtime) -->
+    @if (avisoButacas()) {
+      <p class="error">{{ avisoButacas() }}</p>
+    }
+
     @if (combos().length > 0) {
       <h2>Combos especiales</h2>
       <div class="grilla-combos">

@@ -10,7 +10,7 @@ Trabajo práctico de Programación IV (UTN) — Nadia Moran.
 ## Stack
 
 - **Angular 22**, componentes standalone, `provideZonelessChangeDetection` (todo el estado que cambia en pantalla usa signals) y rutas con carga diferida (`loadComponent`).
-- **Supabase**: base de datos Postgres, autenticación, storage de imágenes (buckets `peliculas` y `candy`) y la lógica de negocio sensible (ver más abajo).
+- **Supabase**: base de datos Postgres, autenticación, storage de imágenes (buckets `peliculas` y `candy`), Realtime y la lógica de negocio sensible (ver más abajo).
 - **Reactive Forms** para todos los formularios, con validadores propios.
 - **jsPDF** y **qrcode** para generar las entradas en PDF, del lado del navegador.
 - **PWA** (`@angular/service-worker` + manifest) y **Firebase Hosting** para el despliegue.
@@ -49,6 +49,7 @@ Para levantar la base desde cero: primero `supabase/schema.sql` (el estado origi
 | 016 | `combos_con_entrada` | Combos con entradas incluidas y foto (bucket `candy`); `crear_orden()` descuenta esas entradas |
 | 017 | `foto_producto` | Foto de los productos |
 | 018 | `programar_funciones` | `programar_funciones()`: funciones recurrentes con vista previa |
+| 019 | `butacas_en_tiempo_real` | Tabla `butacas_vendidas` + triggers, publicada en Supabase Realtime |
 
 ## Estructura del proyecto
 
@@ -96,11 +97,20 @@ La decisión de arquitectura más importante del proyecto: **las reglas que impo
 
 ## Compra de entradas y validación (QR)
 
-1. El cliente elige una función y ve el mapa de butacas con las que ya están vendidas (se consulta al entrar a la pantalla; todavía no se actualiza sola si alguien más compra mientras se está mirando — eso requiere Supabase Realtime). Selecciona butacas libres y, si quiere, productos del candy bar y combos.
+1. El cliente elige una función y ve el mapa de butacas con las que ya están vendidas. El mapa se actualiza **en tiempo real** (ver más abajo): si otra persona compra mientras se está mirando, esa butaca se marca ocupada al instante. Selecciona butacas libres y, si quiere, productos del candy bar y combos.
 2. Los **combos especiales** aparecen destacados con foto. Si un combo incluye entradas, esas butacas no se cobran sueltas: se paga solo el precio del combo (cubre entradas generales, no VIP).
 3. Al confirmar, `crear_orden()` crea la orden, sus butacas y sus productos en una sola transacción, aplica el cupón que corresponda y suma los puntos.
 4. Se genera un PDF (`jsPDF`) con **una página por butaca comprada**: cada entrada se valida por separado en la puerta. Cada página tiene un QR (`qrcode`) con el id de esa butaca-en-esa-orden, más el mismo código como texto por si el lector no funciona.
 5. Un usuario `empleado` (o `administrador`) entra a "Validar entrada", escanea el QR con la cámara (API nativa `BarcodeDetector`, si el navegador la soporta) o escribe el código. Con "Validar entrada" marca esa butaca como usada; con "Retirar candy bar" entrega los productos de la orden con ese mismo código. Ninguno de los dos se puede repetir.
+
+## Butacas en tiempo real (Supabase Realtime)
+
+Requerimiento del cliente: mientras alguien elige butacas, tiene que ver las que otra compra ocupa en ese mismo momento.
+
+- **Qué se escucha:** la tabla `butacas_vendidas` (migración 019), que solo tiene `funcion_id` y `butaca_id`. No se escucha `orden_butacas` porque no tiene permiso de lectura para clientes (Realtime respeta RLS, así que no llegaría nada) y porque su `id` es el código del QR: abrirla permitiría copiar entradas ajenas. Tampoco sirve la vista `butacas_ocupadas`, porque Realtime no funciona con vistas.
+- **Quién la escribe:** nadie desde la app. Triggers en la base la actualizan cuando se compra una butaca, cuando se borra o cuando una orden pasa a `cancelada`.
+- **En Angular:** `OrdenesService.escucharButacas()` abre un canal con `supabase.channel()` y `postgres_changes` (INSERT filtrado por función en el servidor; DELETE filtrado en el cliente, porque Realtime no permite filtrar los DELETE). El componente de compra actualiza el signal `ocupadas` y, si la butaca era una de las elegidas, la quita y avisa. Al salir de la pantalla, `DestroyRef.onDestroy` cierra el canal.
+- **Carrera con la propia compra:** el aviso de Realtime puede llegar antes que la respuesta de `crear_orden()`. Mientras la compra está en curso, el evento solo marca la butaca como ocupada y no muestra el aviso de "alguien la compró".
 
 ## Administración
 
@@ -147,7 +157,7 @@ firebase deploy --only hosting
 
 El detalle completo, requerimiento por requerimiento, está en [`docs/requerimientos.md`](docs/requerimientos.md) (sección 9). Lo principal:
 
-- Butacas en tiempo real (Supabase Realtime) y precio mayor para las butacas VIP.
+- Precio mayor para las butacas VIP.
 - Destacar las 3 más vendidas en la cartelera (el contador `ventas` todavía no se actualiza).
 - Cancelación con crédito, canje de puntos y "Mis películas".
 - Preventa y envío de las alertas de "Próximamente".

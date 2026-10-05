@@ -22,6 +22,47 @@ export class OrdenesService {
     return new Set(data.map((row: any) => row.butaca_id));
   }
 
+  // Supabase Realtime (RF-23): avisa cuando otra compra ocupa (o libera) una
+  // butaca de esta función, sin recargar la página. Escucha la tabla
+  // butacas_vendidas (migración 019), que mantienen los triggers de la base.
+  // Devuelve una función para cortar la suscripción al salir de la pantalla.
+  escucharButacas(
+    funcionId: string,
+    alOcuparse: (butacaId: string) => void,
+    alLiberarse: (butacaId: string) => void,
+  ): () => void {
+    const canal = this.supabase
+      .channel(`butacas-funcion-${funcionId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'butacas_vendidas',
+          // el filtro lo aplica el servidor: solo llegan las de esta función
+          filter: `funcion_id=eq.${funcionId}`,
+        },
+        (payload) => alOcuparse((payload.new as { butaca_id: string }).butaca_id),
+      )
+      .on(
+        'postgres_changes',
+        // Realtime no permite filtrar los DELETE, así que llegan los de todas
+        // las funciones y me quedo solo con los de esta
+        { event: 'DELETE', schema: 'public', table: 'butacas_vendidas' },
+        (payload) => {
+          const borrada = payload.old as { funcion_id?: string; butaca_id?: string };
+          if (borrada.funcion_id === funcionId && borrada.butaca_id) {
+            alLiberarse(borrada.butaca_id);
+          }
+        },
+      )
+      .subscribe();
+
+    return () => {
+      this.supabase.removeChannel(canal);
+    };
+  }
+
   // Para decidir si mostrar el formulario de reseña. La regla real vive en
   // la base (usuario_vio_pelicula(), usada también en la policy de insert de
   // resenas — ver supabase/migraciones/006_...sql); esto solo evita mostrar

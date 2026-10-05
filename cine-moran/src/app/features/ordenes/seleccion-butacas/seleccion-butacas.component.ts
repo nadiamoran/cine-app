@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, computed } from '@angular/core';
+import { Component, DestroyRef, OnInit, signal, computed } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { DatePipe } from '@angular/common';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -38,6 +38,8 @@ export class SeleccionButacasComponent implements OnInit, ComponentePuedeSalir {
 
   comprando = signal(false);
   errorMsg = signal<string | null>(null);
+  // aviso cuando otra persona compra una butaca que este usuario tenía elegida
+  avisoButacas = signal<string | null>(null);
   compraConfirmada = signal<OrdenConButacas | null>(null);
   generandoPdf = signal(false);
 
@@ -146,6 +148,7 @@ export class SeleccionButacasComponent implements OnInit, ComponentePuedeSalir {
     private ticketsService: TicketsService,
     private candyBarService: CandyBarService,
     protected authService: AuthService,
+    private destroyRef: DestroyRef,
   ) {}
 
   async ngOnInit() {
@@ -175,9 +178,44 @@ export class SeleccionButacasComponent implements OnInit, ComponentePuedeSalir {
       this.pelicula.set(pelicula);
       this.sala.set(sala);
       this.butacas.set(butacas);
+
+      // Realtime: desde acá, cada compra de otra persona se refleja sola en
+      // el mapa. La suscripción se corta al salir de la pantalla.
+      const dejarDeEscuchar = this.ordenesService.escucharButacas(
+        funcion.id,
+        (butacaId) => this.onButacaOcupada(butacaId),
+        (butacaId) => this.onButacaLiberada(butacaId),
+      );
+      this.destroyRef.onDestroy(dejarDeEscuchar);
     }
 
     this.cargando.set(false);
+  }
+
+  private onButacaOcupada(butacaId: string) {
+    const ocupadas = new Set(this.ocupadas());
+    ocupadas.add(butacaId);
+    this.ocupadas.set(ocupadas);
+
+    // si es mi propia compra en curso, el evento puede llegar antes que la
+    // respuesta de crear_orden: no es "otra persona", no aviso nada
+    if (this.comprando() || !this.seleccionadas().has(butacaId)) return;
+
+    // otra persona compró una butaca que yo tenía elegida: la saco y aviso
+    const seleccionadas = new Set(this.seleccionadas());
+    seleccionadas.delete(butacaId);
+    this.seleccionadas.set(seleccionadas);
+
+    const butaca = this.butacas().find((b) => b.id === butacaId);
+    this.avisoButacas.set(
+      `Alguien acaba de comprar la butaca ${butaca ? butaca.fila + butaca.numero : ''}. Elegí otra.`,
+    );
+  }
+
+  private onButacaLiberada(butacaId: string) {
+    const ocupadas = new Set(this.ocupadas());
+    ocupadas.delete(butacaId);
+    this.ocupadas.set(ocupadas);
   }
 
   estaSeleccionada(butacaId: string): boolean {
@@ -189,6 +227,7 @@ export class SeleccionButacasComponent implements OnInit, ComponentePuedeSalir {
   }
 
   onSeleccionarButaca(butaca: Butaca) {
+    this.avisoButacas.set(null);
     const actuales = new Set(this.seleccionadas());
     if (actuales.has(butaca.id)) {
       actuales.delete(butaca.id);

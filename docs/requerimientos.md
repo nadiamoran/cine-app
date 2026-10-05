@@ -182,7 +182,7 @@ Prioridad: **A** = imprescindible (lo pidió el cliente y define el sistema), **
 
 ## 5. Modelo de datos
 
-Tablas que existen hoy en Supabase (creadas por `supabase/schema.sql` y las migraciones 001 a 018):
+Tablas que existen hoy en Supabase (creadas por `supabase/schema.sql` y las migraciones 001 a 019):
 
 | Tabla | Para qué |
 |---|---|
@@ -199,6 +199,7 @@ Tablas que existen hoy en Supabase (creadas por `supabase/schema.sql` y las migr
 | `categorias_producto`, `productos` | Candy bar: categorías y productos (con foto y estado activo / dado de baja) |
 | `combos`, `combo_productos` | Combos a precio fijo: entradas generales incluidas, productos, foto y estado |
 | `orden_productos` | Productos y combos de cada compra; guarda cuándo se retiraron en el candy bar |
+| `butacas_vendidas` | Solo función + butaca de lo vendido (sin códigos ni compradores). La mantienen triggers y es la tabla que escucha Realtime |
 
 Diferencias con el modelo preliminar: los géneros quedaron como un arreglo dentro de `peliculas` (no hizo falta una tabla aparte), y la recurrencia no se guarda como `programaciones`: se generan todas las funciones juntas en el momento (ver S-11). Todavía no existen `recompensas`, `puntos_movimientos`, `creditos_movimientos` ni `activity_log`, porque corresponden a requerimientos pendientes (sección 9).
 
@@ -284,7 +285,7 @@ Referencias: ✅ implementado · 🟡 parcial · ❌ pendiente.
 | RF-20 | ✅ | 30 minutos de margen, calculados con la duración de la película. |
 | RF-21 | ✅ | El admin asigna un **estado** a cada película: En cartelera (aparece en la cartelera), Próximamente (aparece en esa sección) o Baja (no aparece en ninguna). |
 | RF-22 | ✅ | Elegir función → butacas → confirmar (pago simulado, S-2). |
-| RF-23 | ❌ | Las butacas ocupadas se cargan al entrar; falta Supabase Realtime. |
+| RF-23 | ✅ | Supabase Realtime: el mapa se suscribe a `butacas_vendidas` (migración 019) y marca como ocupadas, sin recargar, las butacas que compra otra persona. Si era una butaca elegida, se quita y se avisa. |
 | RF-24 | ✅ | Compra anónima con email. |
 | RF-25 | ✅ | Validado en Angular y en la base (`crear_orden`). |
 | RF-26 | ✅ | Aviso en el detalle y en el PDF ("debe ir acompañado de un adulto"). |
@@ -320,7 +321,7 @@ Referencias: ✅ implementado · 🟡 parcial · ❌ pendiente.
 | RNF-02 | 🟡 | "Programar funciones" usa chips de días, chips de horarios y atajos de período. Quedan selectores de fecha comunes en estreno, función única y registro. |
 | RNF-03 | ✅ | Estética propia (tema oscuro, dorado, tipografía de marquesina). |
 | RNF-04 | ✅ | Angular standalone, signals, zoneless, Reactive Forms, guards, lazy loading. |
-| RNF-05 | 🟡 | Base de datos, Auth, Storage y funciones SQL. Falta Realtime (RF-23). |
+| RNF-05 | ✅ | Base de datos, Auth, Storage, funciones SQL y Realtime (RF-23). |
 | RNF-06 | ✅ | Manifest + service worker. |
 | RNF-07 | ✅ | Firebase Hosting (https://cine-moran.web.app), GitHub y README. |
 | RNF-08 | ✅ | RLS y funciones `security definer` en la base. |
