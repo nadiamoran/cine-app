@@ -40,25 +40,6 @@ cine-moran/src/app/
         └── gestionar-cupones/   # Cupones
 ```
 
-
-## Compra de entradas y validación (QR)
-
-1. El cliente elige una función y ve el mapa de butacas con las que ya están vendidas. El mapa se actualiza **en tiempo real** (ver más abajo): si otra persona compra mientras se está mirando, esa butaca se marca ocupada al instante. Selecciona butacas libres y, si quiere, productos del candy bar y combos.
-2. Los **combos especiales** aparecen destacados con foto. Si un combo incluye entradas, esas butacas no se cobran sueltas: se paga solo el precio del combo (cubre entradas generales, no VIP).
-3. Al confirmar, `crear_orden()` crea la orden, sus butacas y sus productos en una sola transacción, aplica el cupón que corresponda y suma los puntos.
-4. Se genera un PDF (`jsPDF`) con **una página por butaca comprada**: cada entrada se valida por separado en la puerta. Cada página tiene un QR (`qrcode`) con el id de esa butaca-en-esa-orden, más el mismo código como texto por si el lector no funciona.
-5. Un usuario `empleado` (o `administrador`) entra a "Validar entrada", escanea el QR con la cámara (API nativa `BarcodeDetector`, si el navegador la soporta) o escribe el código. Con "Validar entrada" marca esa butaca como usada; con "Retirar candy bar" entrega los productos de la orden con ese mismo código. Ninguno de los dos se puede repetir.
-
-## Administración
-
-El administrador entra a su **panel** (`/admin`) desde "Hola, {nombre}" — no tiene perfil de cliente, porque no acumula puntos ni compra. Todas las pantallas de administración siguen el mismo patrón: **listado arriba, botón "Nuevo" y un formulario que se abre solo cuando hace falta**.
-
-- **Películas**: alta con imagen, géneros elegidos de los ya cargados y estado: En cartelera (se ve en la cartelera), Próximamente (se ve en esa sección) o Baja (no se ve).
-- **Funciones**: "Programar funciones" (días de la semana + horarios + período, con vista previa de la sala de cada función) o "Función única"; edición y baja.
-- **Salas**: alta (las butacas se crean solas con la forma que definió el cliente) y habilitar / deshabilitar.
-- **Productos** y **Combos**: alta con foto, edición (productos) y activar / dar de baja.
-- **Cupones**: porcentaje del cupón de bienvenida y cupones por edad.
-
 ## Roles
 
 `profiles.rol` puede ser `cliente`, `empleado` o `administrador`. Un usuario nuevo siempre arranca como `cliente`; los otros roles se asignan a mano desde el SQL Editor de Supabase (no hay una pantalla para eso, a propósito: es una operación sensible y poco frecuente).
