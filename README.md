@@ -40,8 +40,6 @@ cine-moran/src/app/
         └── gestionar-cupones/   # Cupones
 ```
 
-Cada feature tiene su propio `.service.ts` para hablar con Supabase y su(s) componente(s). El único servicio compartido "de infraestructura" es `SupabaseService` (`core/supabase.service.ts`): un solo cliente de Supabase para toda la app, en vez de que cada servicio cree el suyo. Esto da una sola sesión de autenticación y una sola configuración para cuando se sume Realtime.
-
 
 ## Compra de entradas y validación (QR)
 
@@ -64,13 +62,3 @@ El administrador entra a su **panel** (`/admin`) desde "Hola, {nombre}" — no t
 ## Roles
 
 `profiles.rol` puede ser `cliente`, `empleado` o `administrador`. Un usuario nuevo siempre arranca como `cliente`; los otros roles se asignan a mano desde el SQL Editor de Supabase (no hay una pantalla para eso, a propósito: es una operación sensible y poco frecuente).
-
-## Qué falta
-
-El detalle completo, requerimiento por requerimiento, está en [`docs/requerimientos.md`](docs/requerimientos.md) (sección 9). Lo principal:
-
-- Precio mayor para las butacas VIP.
-- Destacar las 3 más vendidas en la cartelera (el contador `ventas` todavía no se actualiza).
-- Cancelación con crédito, canje de puntos y "Mis películas".
-- Preventa y envío de las alertas de "Próximamente".
-- Reportes de facturación (con exportación a PDF y Excel), gráficos y log de actividad en el panel de administración.
