@@ -43,20 +43,6 @@ cine-moran/src/app/
 Cada feature tiene su propio `.service.ts` para hablar con Supabase y su(s) componente(s). El único servicio compartido "de infraestructura" es `SupabaseService` (`core/supabase.service.ts`): un solo cliente de Supabase para toda la app, en vez de que cada servicio cree el suyo. Esto da una sola sesión de autenticación y una sola configuración para cuando se sume Realtime.
 
 
-
-| Regla | Dónde vive | Por qué ahí |
-|---|---|---|
-| Nadie puede asignarse el rol de administrador a sí mismo | Permisos por columna en `profiles` | La política de "actualizar mi perfil" no alcanza para bloquear una sola columna; hace falta revocar el `update` de esa columna puntual |
-| Dos personas no pueden comprar la misma butaca para la misma función | Restricción `unique(funcion_id, butaca_id)` en `orden_butacas`, dentro de `crear_orden()` | Es la única forma de garantizarlo bajo concurrencia real; una validación en Angular llega tarde si dos compras entran casi al mismo tiempo |
-| Una función no puede ir a una sala ocupada en ese horario (30 min de margen, según la duración de la película) | `asignar_funcion()`, `editar_funcion()` y `programar_funciones()` | El admin nunca elige la sala: el sistema la busca sola, solo entre salas habilitadas |
-| Una función con entradas vendidas no cambia de sala ni se puede borrar | `editar_funcion()` y la clave foránea de `ordenes` | Las butacas compradas pertenecen a esa sala |
-| No se puede comprar una entrada +13/+18 sin cumplir la edad | `crear_orden()` (además de un chequeo igual en Angular, para la experiencia) | Alguien podría llamar a la función SQL directo, sin pasar por la pantalla |
-| El total de la compra (cupón, productos, combos con entradas incluidas) | `crear_orden()` | El precio nunca se toma del navegador; Angular solo muestra una estimación |
-| Un combo cubre entradas generales, no VIP | `crear_orden()` | Cuenta las butacas no VIP elegidas y rechaza la compra si no alcanzan |
-| Solo puede dejar reseña quien ya vio la película | Política de insert en `resenas`, usando `usuario_vio_pelicula()` | La regla tiene que sobrevivir aunque no se pase por el formulario de Angular |
-| Una entrada validada o un candy bar retirado no se pueden volver a usar | `validar_entrada()` y `retirar_candy()` (columnas `validada_en` y `retirado_en`) | La validación la hace un empleado desde otra pantalla; la regla vive donde están los datos |
-| Solo el admin sube imágenes y modifica el catálogo | Políticas de RLS y de Storage con `tiene_rol()` | Un cliente logueado no puede llenar el almacenamiento ni cambiar precios |
-
 ## Compra de entradas y validación (QR)
 
 1. El cliente elige una función y ve el mapa de butacas con las que ya están vendidas. El mapa se actualiza **en tiempo real** (ver más abajo): si otra persona compra mientras se está mirando, esa butaca se marca ocupada al instante. Selecciona butacas libres y, si quiere, productos del candy bar y combos.
@@ -64,15 +50,6 @@ Cada feature tiene su propio `.service.ts` para hablar con Supabase y su(s) comp
 3. Al confirmar, `crear_orden()` crea la orden, sus butacas y sus productos en una sola transacción, aplica el cupón que corresponda y suma los puntos.
 4. Se genera un PDF (`jsPDF`) con **una página por butaca comprada**: cada entrada se valida por separado en la puerta. Cada página tiene un QR (`qrcode`) con el id de esa butaca-en-esa-orden, más el mismo código como texto por si el lector no funciona.
 5. Un usuario `empleado` (o `administrador`) entra a "Validar entrada", escanea el QR con la cámara (API nativa `BarcodeDetector`, si el navegador la soporta) o escribe el código. Con "Validar entrada" marca esa butaca como usada; con "Retirar candy bar" entrega los productos de la orden con ese mismo código. Ninguno de los dos se puede repetir.
-
-## Butacas en tiempo real (Supabase Realtime)
-
-Requerimiento del cliente: mientras alguien elige butacas, tiene que ver las que otra compra ocupa en ese mismo momento.
-
-- **Qué se escucha:** la tabla `butacas_vendidas` (migración 019), que solo tiene `funcion_id` y `butaca_id`. No se escucha `orden_butacas` porque no tiene permiso de lectura para clientes (Realtime respeta RLS, así que no llegaría nada) y porque su `id` es el código del QR: abrirla permitiría copiar entradas ajenas. Tampoco sirve la vista `butacas_ocupadas`, porque Realtime no funciona con vistas.
-- **Quién la escribe:** nadie desde la app. Triggers en la base la actualizan cuando se compra una butaca, cuando se borra o cuando una orden pasa a `cancelada`.
-- **En Angular:** `OrdenesService.escucharButacas()` abre un canal con `supabase.channel()` y `postgres_changes` (INSERT filtrado por función en el servidor; DELETE filtrado en el cliente, porque Realtime no permite filtrar los DELETE). El componente de compra actualiza el signal `ocupadas` y, si la butaca era una de las elegidas, la quita y avisa. Al salir de la pantalla, `DestroyRef.onDestroy` cierra el canal.
-- **Carrera con la propia compra:** el aviso de Realtime puede llegar antes que la respuesta de `crear_orden()`. Mientras la compra está en curso, el evento solo marca la butaca como ocupada y no muestra el aviso de "alguien la compró".
 
 ## Administración
 
@@ -87,33 +64,6 @@ El administrador entra a su **panel** (`/admin`) desde "Hola, {nombre}" — no t
 ## Roles
 
 `profiles.rol` puede ser `cliente`, `empleado` o `administrador`. Un usuario nuevo siempre arranca como `cliente`; los otros roles se asignan a mano desde el SQL Editor de Supabase (no hay una pantalla para eso, a propósito: es una operación sensible y poco frecuente).
-
-```sql
-update profiles set rol = 'administrador' where id = (select id from auth.users where email = 'mail@ejemplo.com');
-```
-
-## Decisiones y supuestos
-
-Los mails del cliente tienen varios puntos ambiguos o contradictorios. Las decisiones tomadas para resolverlos están en [`docs/requerimientos.md`](docs/requerimientos.md) (sección 6).
-
-Otras decisiones técnicas, además de las de la tabla de arriba:
-
-- **Reactive Forms en vez de Signal Forms** (`@angular/forms/signals`): esta última es una API muy nueva de Angular; con Reactive Forms se pueden usar validadores sincrónicos propios (como se vio en clase) y queda más fácil de defender.
-- **Pago simulado**: el cliente nunca definió un medio de pago; no hay pasarela real.
-- **PDF y QR generados en el navegador**: evita tener que armar un backend propio solo para eso.
-- **Funciones recurrentes sin tabla de "programaciones"**: `programar_funciones()` genera todas las funciones del período de una vez. La vista previa ejecuta exactamente la misma lógica y al final deshace los cambios, así lo que se muestra es lo que se va a crear (incluidos los choques entre funciones de la misma tanda).
-- **Bajas lógicas**: productos, combos y salas no se borran, se desactivan, porque las compras viejas los referencian.
-- **Géneros como arreglo** dentro de `peliculas`: la lista de géneros disponibles se arma con los que ya usan las películas cargadas.
-
-## Despliegue
-
-```bash
-cd cine-moran
-ng build
-firebase deploy --only hosting
-```
-
-`firebase.json` publica `dist/cine-moran/browser` y redirige todas las rutas a `index.html` (necesario para que funcionen las rutas de Angular al recargar la página).
 
 ## Qué falta
 
