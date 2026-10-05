@@ -15,41 +15,6 @@ Trabajo práctico de Programación IV (UTN) — Nadia Moran.
 - **jsPDF** y **qrcode** para generar las entradas en PDF, del lado del navegador.
 - **PWA** (`@angular/service-worker` + manifest) y **Firebase Hosting** para el despliegue.
 
-## Cómo correrlo
-
-```bash
-cd cine-moran
-npm install
-ng serve
-```
-
-La app apunta al proyecto de Supabase configurado en `cine-moran/src/environments/environment.ts` (la clave ahí es la clave pública, protegida por las políticas de la base — no es un secreto). Hay un solo entorno: la misma base se usa en desarrollo y en la app desplegada.
-
-### Base de datos
-
-Para levantar la base desde cero: primero `supabase/schema.sql` (el estado original: `profiles`, `peliculas`, `resenas`, `alertas_estreno`) y después los archivos de `supabase/migraciones/` **en orden**, en el SQL Editor de Supabase:
-
-| # | Migración | Qué agrega |
-|---|---|---|
-| 001 | `salas_butacas_y_seguridad` | Salas y butacas (`crear_sala()`), función `tiene_rol()`, corrección de permisos de `profiles`, 3 salas de ejemplo |
-| 002 | `storage_solo_admin_sube_imagenes` | Solo el admin sube imágenes al bucket `peliculas` |
-| 003 | `funciones` | Funciones y `asignar_funcion()` (sala automática, 30 min de margen) |
-| 004 | `ordenes` | Órdenes, `orden_butacas` con `unique(funcion_id, butaca_id)` y `crear_orden()` |
-| 005 | `edad_minima_en_orden` | La restricción +13/+18 también se valida en la base |
-| 006 | `resena_requiere_haber_visto` | Solo reseña quien compró una entrada de una función que ya pasó |
-| 007 | `crear_orden_devuelve_butacas` | `crear_orden()` devuelve el detalle de las butacas (para el PDF) |
-| 008 | `validar_entrada` | `validar_entrada()` para empleados; el código se usa una sola vez |
-| 009 | `puntos_y_perfil` | Puntos de fidelización (1 por peso) |
-| 010 | `cupones` | Cupón de bienvenida (20 %) y cupones por edad, configurables |
-| 011 | `candy_bar` | Categorías, productos y combos |
-| 012 | `candy_bar_en_la_compra` | Productos en la compra y `retirar_candy()` con el mismo código |
-| 013 | `estado_pelicula` | Estado de la película: en cartelera, próximamente o baja |
-| 014 | `editar_funcion` | `editar_funcion()` reasignando sala con las mismas reglas |
-| 015 | `sala_habilitada` | Habilitar / deshabilitar salas; solo las habilitadas reciben funciones |
-| 016 | `combos_con_entrada` | Combos con entradas incluidas y foto (bucket `candy`); `crear_orden()` descuenta esas entradas |
-| 017 | `foto_producto` | Foto de los productos |
-| 018 | `programar_funciones` | `programar_funciones()`: funciones recurrentes con vista previa |
-
 ## Estructura del proyecto
 
 ```
@@ -77,9 +42,7 @@ cine-moran/src/app/
 
 Cada feature tiene su propio `.service.ts` para hablar con Supabase y su(s) componente(s). El único servicio compartido "de infraestructura" es `SupabaseService` (`core/supabase.service.ts`): un solo cliente de Supabase para toda la app, en vez de que cada servicio cree el suyo. Esto da una sola sesión de autenticación y una sola configuración para cuando se sume Realtime.
 
-## Dónde vive la lógica de negocio
 
-La decisión de arquitectura más importante del proyecto: **las reglas que importan de verdad no dependen de que el código de Angular las respete**, viven en la base de datos (políticas de RLS y funciones `security definer`). Un guard de Angular solo mejora la experiencia (evita que alguien vea una pantalla que no le corresponde); la regla real está un nivel más abajo, para que no se pueda saltear editando el JavaScript del navegador o llamando a la API directo.
 
 | Regla | Dónde vive | Por qué ahí |
 |---|---|---|
