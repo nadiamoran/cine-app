@@ -106,7 +106,7 @@ La decisión de arquitectura más importante del proyecto: **las reglas que impo
 
 El administrador entra a su **panel** (`/admin`) desde "Hola, {nombre}" — no tiene perfil de cliente, porque no acumula puntos ni compra. Todas las pantallas de administración siguen el mismo patrón: **listado arriba, botón "Nuevo" y un formulario que se abre solo cuando hace falta**.
 
-- **Películas**: alta con imagen, géneros elegidos de los ya cargados y estado (En cartelera / Próximamente / Baja).
+- **Películas**: alta con imagen, géneros elegidos de los ya cargados y estado: En cartelera (se ve en la cartelera), Próximamente (se ve en esa sección) o Baja (no se ve).
 - **Funciones**: "Programar funciones" (días de la semana + horarios + período, con vista previa de la sala de cada función) o "Función única"; edición y baja.
 - **Salas**: alta (las butacas se crean solas con la forma que definió el cliente) y habilitar / deshabilitar.
 - **Productos** y **Combos**: alta con foto, edición (productos) y activar / dar de baja.
@@ -148,7 +148,7 @@ firebase deploy --only hosting
 El detalle completo, requerimiento por requerimiento, está en [`docs/requerimientos.md`](docs/requerimientos.md) (sección 9). Lo principal:
 
 - Butacas en tiempo real (Supabase Realtime) y precio mayor para las butacas VIP.
-- Que la cartelera pública use el estado de película que define el admin, y destacar las 3 más vendidas (el contador `ventas` todavía no se actualiza).
+- Destacar las 3 más vendidas en la cartelera (el contador `ventas` todavía no se actualiza).
 - Cancelación con crédito, canje de puntos y "Mis películas".
 - Preventa y envío de las alertas de "Próximamente".
 - Reportes de facturación (con exportación a PDF y Excel), gráficos y log de actividad en el panel de administración.

@@ -267,7 +267,7 @@ Referencias: ✅ implementado · 🟡 parcial · ❌ pendiente.
 | RF-03 | ✅ | Sin restricción / +13 / +18. |
 | RF-04 | 🟡 | La cartelera se ordena por `peliculas.ventas`, pero ese contador todavía no se actualiza al comprar y las 3 primeras no se destacan visualmente. |
 | RF-05 | ✅ | Buscador por nombre + filtro por género (contempla varios géneros). Los filtros quedan en la URL. |
-| RF-06 | ✅ | Sección Próximamente (películas con fecha de estreno futura). |
+| RF-06 | ✅ | Sección Próximamente con las películas en estado "Próximamente", ordenadas por fecha de estreno. |
 | RF-07 | 🟡 | Se puede activar y cancelar la alerta; todavía no se envía la notificación. |
 | RF-08 | ✅ | Detalle con horarios, formato, idioma, sala, precio, reseñas y promedio. |
 | RF-09 | ✅ | 1 a 5 estrellas + comentario; solo quien ya vio la película (regla en la base). |
@@ -282,7 +282,7 @@ Referencias: ✅ implementado · 🟡 parcial · ❌ pendiente.
 | RF-18 | ✅ | "Programar funciones": días de la semana + horarios + período, con vista previa (S-11). |
 | RF-19 | ✅ | Sala asignada por la base (`asignar_funcion`, `editar_funcion`, `programar_funciones`); nunca se superponen. |
 | RF-20 | ✅ | 30 minutos de margen, calculados con la duración de la película. |
-| RF-21 | 🟡 | El admin asigna un **estado** a cada película (En cartelera / Próximamente / Baja), pero la cartelera pública todavía se arma con `visible_home` y la fecha de estreno, no con ese estado. |
+| RF-21 | ✅ | El admin asigna un **estado** a cada película: En cartelera (aparece en la cartelera), Próximamente (aparece en esa sección) o Baja (no aparece en ninguna). |
 | RF-22 | ✅ | Elegir función → butacas → confirmar (pago simulado, S-2). |
 | RF-23 | ❌ | Las butacas ocupadas se cargan al entrar; falta Supabase Realtime. |
 | RF-24 | ✅ | Compra anónima con email. |

@@ -14,7 +14,8 @@ export class PeliculasService {
     const { data, error } = await this.supabase
       .from('peliculas')
       .select('*')
-      .eq('visible_home', true)
+      // el admin decide qué se ve en la cartelera con el estado de la película
+      .eq('estado', 'en_cartelera')
       // más vendidas primero (RF-07); hoy todas están en 0, se va a notar
       // cuando exista el módulo de compra
       .order('ventas', { ascending: false })
@@ -51,13 +52,13 @@ export class PeliculasService {
   }
 
     async getProximamente(): Promise<Pelicula[]> {
-    const hoy = new Date().toISOString().split('T')[0]; // yyyy-mm-dd
-
+    // las que el admin marcó como "Próximamente"; las que tienen fecha de
+    // estreno van primero, ordenadas por esa fecha
     const { data, error } = await this.supabase
       .from('peliculas')
       .select('*')
-      .gt('fecha_estreno', hoy)
-      .order('fecha_estreno', { ascending: true });
+      .eq('estado', 'proximamente')
+      .order('fecha_estreno', { ascending: true, nullsFirst: false });
 
     if (error || !data) return [];
     return data.map((row) => this.mapRow(row));

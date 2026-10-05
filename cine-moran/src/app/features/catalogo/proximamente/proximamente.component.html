@@ -12,7 +12,11 @@
           <img [src]="pelicula.imagen_url" [alt]="pelicula.nombre" />
         }
         <h3>{{ pelicula.nombre }}</h3>
-        <p>Estreno: {{ pelicula.fechaEstreno | date: 'dd/MM/yyyy' }}</p>
+        @if (pelicula.fechaEstreno) {
+          <p>Estreno: {{ pelicula.fechaEstreno | date: 'dd/MM/yyyy' }}</p>
+        } @else {
+          <p>Estreno: a confirmar</p>
+        }
 
         @if (authService.currentUser()) {
           <button (click)="toggleAlerta(pelicula.id)">
