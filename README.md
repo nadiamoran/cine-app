@@ -39,7 +39,3 @@ cine-moran/src/app/
         ├── crear-combo/         # Combos
         └── gestionar-cupones/   # Cupones
 ```
-
-## Roles
-
-`profiles.rol` puede ser `cliente`, `empleado` o `administrador`. Un usuario nuevo siempre arranca como `cliente`; los otros roles se asignan a mano desde el SQL Editor de Supabase (no hay una pantalla para eso, a propósito: es una operación sensible y poco frecuente).
