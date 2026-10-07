@@ -57,7 +57,7 @@ Trabajo práctico N.° 1 de Programación IV (UTN) — Nadia Moran.
    npm start
    ```
    Queda en `http://localhost:4200`.
-5. Los roles de empleado y administrador se asignan a mano desde Supabase (a propósito, ver más abajo):
+5. Los roles de empleado y administrador se asignan a mano desde Supabase:
    ```sql
    update profiles set rol = 'administrador' where id = (select id from auth.users where email = 'mail@ejemplo.com');
    ```
@@ -90,10 +90,6 @@ supabase/
 └── migraciones/     # 001 a 027, cada una con un cambio y su explicación
 ```
 
-Organicé el código **por funcionalidad** y no por tipo de archivo: todo lo de una parte del sistema (componentes, servicio y modelo) está junto, así es más fácil encontrarlo. Cada pantalla se carga recién cuando se entra (lazy loading).
-
----
-
 ## Arquitectura
 
 ```
@@ -104,13 +100,9 @@ Angular (navegador)  ──►  Supabase
                            └─ Realtime (butacas vendidas)
 ```
 
-La app no tiene un servidor propio: Angular habla directo con Supabase. Por eso **la seguridad y las reglas del negocio están en la base**, no en el front:
-
 - **RLS (Row Level Security)** en todas las tablas: por defecto nadie puede leer ni escribir nada, y se habilita solo lo necesario. Cada cliente ve solo sus compras, solo el admin modifica el catálogo, etc.
 - **Funciones SQL** para las operaciones importantes. Por ejemplo, `crear_orden` hace toda la compra en una sola transacción (precio, edad, butacas, cupón, crédito, puntos, canje) y, si algo falla, no se guarda nada.
 - **Triggers** para lo que tiene que pasar siempre: sumar ventas, liberar butacas al cancelar y registrar el log de actividad.
-
-El front valida también, pero para dar una mejor experiencia (avisar antes de enviar). La regla real está en la base, porque cualquiera podría llamar a la API salteándose Angular.
 
 ---
 
@@ -146,8 +138,6 @@ El front valida también, pero para dar una mejor experiencia (avisar antes de e
 
 ---
 
-## Temas de la materia que se usan
-
 | Tema | Dónde |
 |---|---|
 | Rutas y lazy loading | `app.routes.ts`: todas las pantallas con `loadComponent`; el admin con rutas hijas dentro de un layout con menú lateral |
@@ -162,10 +152,3 @@ El front valida también, pero para dar una mejor experiencia (avisar antes de e
 | Supabase Realtime | Butacas que se ocupan en vivo mientras otra persona elige |
 
 ---
-
-## Pendientes
-
-- La alerta de "Próximamente" se activa, pero todavía no envía la notificación cuando abre la venta (RF-07).
-- Quedan algunos campos de fecha con el calendario común del navegador (RNF-02).
-
-El estado detallado de cada requerimiento está en la sección 9 de [`docs/requerimientos.md`](docs/requerimientos.md).
