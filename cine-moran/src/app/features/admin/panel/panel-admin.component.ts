@@ -20,6 +20,7 @@ export class PanelAdminComponent {
     { ruta: '/admin/crear-combo', titulo: 'Combos', detalle: 'Entrada + candy a precio fijo' },
     { ruta: '/admin/cupones', titulo: 'Cupones', detalle: 'Descuentos y porcentajes' },
     { ruta: '/admin/recompensas', titulo: 'Recompensas', detalle: 'Canje de puntos' },
+    { ruta: '/admin/reportes', titulo: 'Reportes', detalle: 'Facturación y rankings' },
     { ruta: '/admin/actividad', titulo: 'Actividad', detalle: 'Funciones, precios y validaciones' },
     { ruta: '/admin/validar', titulo: 'Validar entrada', detalle: 'QR o código manual' },
   ];

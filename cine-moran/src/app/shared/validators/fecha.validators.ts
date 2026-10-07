@@ -13,3 +13,20 @@ export function fechaNoFuturaValidator(): ValidatorFn {
     return control.value > hoy ? { fechaFutura: true } : null;
   };
 }
+
+// La fecha tiene que tener un año de 4 cifras dentro de un rango razonable.
+// Sin esto, el input type="date" deja escribir años como 20056 (o 0999) y la
+// fecha se guarda igual.
+export function fechaEnRangoValidator(anioMinimo: number, anioMaximo: number): ValidatorFn {
+  return (control: AbstractControl): ValidationErrors | null => {
+    if (!control.value) return null; // si está vacío lo maneja Validators.required
+
+    const partes = /^(\d{4})-\d{2}-\d{2}$/.exec(control.value);
+    if (!partes) return { fechaInvalida: true };
+
+    const anio = Number(partes[1]);
+    return anio < anioMinimo || anio > anioMaximo
+      ? { fechaFueraDeRango: { anioMinimo, anioMaximo } }
+      : null;
+  };
+}

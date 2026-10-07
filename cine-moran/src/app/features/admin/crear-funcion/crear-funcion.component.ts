@@ -6,6 +6,10 @@ import { PeliculasService } from '../../catalogo/peliculas.service';
 import { Pelicula } from '../../catalogo/pelicula.model';
 import { FuncionesService } from '../../funciones/funciones.service';
 import { Formato, Funcion, Idioma, PrecioEntrada } from '../../funciones/funcion.model';
+import { fechaEnRangoValidator } from '../../../shared/validators/fecha.validators';
+
+// funciones: este año, el anterior (para editar) y hasta 2 años adelante
+const fechaFuncionValida = fechaEnRangoValidator(new Date().getFullYear() - 1, new Date().getFullYear() + 2);
 
 @Component({
   selector: 'app-crear-funcion',
@@ -26,6 +30,25 @@ export class CrearFuncionComponent implements OnInit {
   // funciones actuales, para poder editarlas o eliminarlas
   cargando = signal(true);
   funciones = signal<Funcion[]>([]);
+
+  // buscador y filtro del listado (mismo mecanismo que en Películas)
+  busqueda = signal('');
+  filtro = signal('');
+  readonly opcionesFiltro = [
+    { valor: '2d', etiqueta: '2D' },
+    { valor: '3d', etiqueta: '3D' },
+    { valor: '4d', etiqueta: '4D' },
+    { valor: '5d', etiqueta: '5D' },
+  ];
+
+  // se recalcula solo cuando cambian la lista, la búsqueda o el filtro
+  funcionesFiltradas = computed(() => {
+    const texto = this.busqueda().trim().toLowerCase();
+    const filtro = this.filtro();
+    return this.funciones().filter(
+      (f) => (!texto || (f.nombrePelicula ?? '').toLowerCase().includes(texto)) && (!filtro || f.formato === filtro),
+    );
+  });
   eliminandoId = signal<string | null>(null);
 
   // el formulario queda oculto hasta que se toca "Nueva función" o "Editar"
@@ -35,7 +58,7 @@ export class CrearFuncionComponent implements OnInit {
 
   funcionForm = new FormGroup({
     peliculaId: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
-    fecha: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+    fecha: new FormControl('', { nonNullable: true, validators: [Validators.required, fechaFuncionValida] }),
     hora: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
     formato: new FormControl<Formato>('2d', { nonNullable: true }),
     idioma: new FormControl<Idioma>('castellano', { nonNullable: true }),
@@ -59,8 +82,8 @@ export class CrearFuncionComponent implements OnInit {
 
   programacionForm = new FormGroup({
     peliculaId: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
-    desde: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
-    hasta: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+    desde: new FormControl('', { nonNullable: true, validators: [Validators.required, fechaFuncionValida] }),
+    hasta: new FormControl('', { nonNullable: true, validators: [Validators.required, fechaFuncionValida] }),
     formato: new FormControl<Formato>('2d', { nonNullable: true }),
     idioma: new FormControl<Idioma>('castellano', { nonNullable: true }),
   });

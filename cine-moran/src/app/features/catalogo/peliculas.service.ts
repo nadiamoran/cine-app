@@ -135,17 +135,36 @@ export class PeliculasService {
     return { error: error?.message ?? null };
   }
 
-  // RF-29: la base valida la preventa con un trigger (migración 023):
-  // exige fecha de estreno y que el descuento no deje entradas en $0
-  async actualizarPreventa(
+  // Edita todos los datos de una película. La imagen solo se cambia si se
+  // subió una nueva (imagenUrl distinto de null). La base sigue validando la
+  // preventa con su trigger (migración 023).
+  async actualizar(
     id: string,
-    fechaEstreno: string | null,
-    preventaDescuento: number | null,
+    datos: {
+      nombre: string;
+      sinopsis: string;
+      duracionMinutos: number;
+      generos: string[];
+      restriccionEdad: string;
+      fechaEstreno: string | null;
+      imagenUrl: string | null;
+      estado: EstadoPelicula;
+      preventaDescuento: number | null;
+    },
   ): Promise<{ error: string | null }> {
-    const { error } = await this.supabase
-      .from('peliculas')
-      .update({ fecha_estreno: fechaEstreno || null, preventa_descuento: preventaDescuento })
-      .eq('id', id);
+    const cambios: Record<string, unknown> = {
+      nombre: datos.nombre,
+      sinopsis: datos.sinopsis,
+      duracion_minutos: datos.duracionMinutos,
+      generos: datos.generos,
+      restriccion_edad: datos.restriccionEdad,
+      fecha_estreno: datos.fechaEstreno || null,
+      estado: datos.estado,
+      preventa_descuento: datos.preventaDescuento,
+    };
+    if (datos.imagenUrl) cambios['imagen_url'] = datos.imagenUrl;
+
+    const { error } = await this.supabase.from('peliculas').update(cambios).eq('id', id);
     return { error: error?.message ?? null };
   }
 

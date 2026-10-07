@@ -1,0 +1,143 @@
+<div class="encabezado-admin">
+  <div>
+    <h1>Reportes</h1>
+    <p class="subtitulo-admin">Facturación, películas más vistas y productos más vendidos.</p>
+  </div>
+</div>
+
+<!-- RF-52 / RF-53: facturación por día, exportable -->
+<section class="bloque-reporte">
+  <div class="bloque-reporte-encabezado">
+    <h2>Facturación por día</h2>
+    <div class="acciones-funcion">
+      <button
+        type="button"
+        class="btn-secundario"
+        [disabled]="cargandoFacturacion() || filas().length === 0"
+        (click)="onExportarPdf()"
+      >
+        Exportar PDF
+      </button>
+      <button
+        type="button"
+        class="btn-secundario"
+        [disabled]="cargandoFacturacion() || filas().length === 0"
+        (click)="onExportarExcel()"
+      >
+        Exportar Excel
+      </button>
+    </div>
+  </div>
+
+  <!-- atajos de período en vez de calendario -->
+  <div class="chips-generos">
+    @for (periodo of periodosFacturacion; track periodo.valor) {
+      <button
+        type="button"
+        class="chip-genero"
+        [class.chip-genero-activo]="periodoFacturacion() === periodo.valor"
+        (click)="onCambiarPeriodoFacturacion(periodo.valor)"
+      >
+        {{ periodo.etiqueta }}
+      </button>
+    }
+  </div>
+
+  <div class="resumen-perfil">
+    <div class="tarjeta-metrica">
+      <span class="valor">${{ totalFacturado() | number: '1.0-0' }}</span>
+      <span class="etiqueta">Facturado en el período</span>
+    </div>
+    <div class="tarjeta-metrica">
+      <span class="valor">{{ totalEntradas() }}</span>
+      <span class="etiqueta">Entradas vendidas</span>
+    </div>
+  </div>
+
+  @if (cargandoFacturacion()) {
+    <p>Cargando...</p>
+  } @else {
+    <table class="tabla-reporte">
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Entradas vendidas</th>
+          <th>Facturado</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (fila of filas(); track fila.fecha) {
+          <tr [class.fila-sin-ventas]="fila.entradas === 0 && fila.facturado === 0">
+            <td>{{ fila.fecha | date: 'EEE dd/MM/yyyy' }}</td>
+            <td>{{ fila.entradas }}</td>
+            <td>${{ fila.facturado | number: '1.0-0' }}</td>
+          </tr>
+        }
+      </tbody>
+      <tfoot>
+        <tr>
+          <td>Total</td>
+          <td>{{ totalEntradas() }}</td>
+          <td>${{ totalFacturado() | number: '1.0-0' }}</td>
+        </tr>
+      </tfoot>
+    </table>
+  }
+</section>
+
+<!-- RF-54: gráficos -->
+<section class="bloque-reporte">
+  <div class="bloque-reporte-encabezado">
+    <h2>Rankings</h2>
+    <div class="chips-generos">
+      @for (periodo of periodosRanking; track periodo.valor) {
+        <button
+          type="button"
+          class="chip-genero"
+          [class.chip-genero-activo]="periodoRanking() === periodo.valor"
+          (click)="onCambiarPeriodoRanking(periodo.valor)"
+        >
+          {{ periodo.etiqueta }}
+        </button>
+      }
+    </div>
+  </div>
+
+  @if (cargandoRanking()) {
+    <p>Cargando...</p>
+  } @else {
+    <div class="grilla-graficos">
+      <div class="grafico">
+        <h3>Películas más vistas</h3>
+        <p class="detalle-seleccion">Entradas vendidas para funciones del período</p>
+        @for (item of peliculas(); track item.nombre) {
+          <div class="barra-fila">
+            <span class="barra-nombre">{{ item.nombre }}</span>
+            <div class="barra-fondo">
+              <div class="barra" [style.width.%]="anchoBarra(item, peliculas())"></div>
+            </div>
+            <span class="barra-valor">{{ item.cantidad }}</span>
+          </div>
+        } @empty {
+          <p class="detalle-seleccion">Todavía no hay entradas vendidas en este período.</p>
+        }
+      </div>
+
+      <div class="grafico">
+        <h3>Productos más vendidos</h3>
+        <p class="detalle-seleccion">Unidades vendidas (sueltas, en combos y canjeadas)</p>
+        @for (item of productos(); track item.nombre) {
+          <div class="barra-fila">
+            <span class="barra-nombre">{{ item.nombre }}</span>
+            <div class="barra-fondo">
+              <div class="barra barra-producto" [style.width.%]="anchoBarra(item, productos())"></div>
+            </div>
+            <span class="barra-valor">{{ item.cantidad }}</span>
+          </div>
+        } @empty {
+          <p class="detalle-seleccion">Todavía no hay productos vendidos en este período.</p>
+        }
+      </div>
+    </div>
+  }
+</section>

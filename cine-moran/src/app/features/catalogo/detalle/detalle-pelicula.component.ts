@@ -55,7 +55,8 @@ export class DetallePeliculaComponent implements OnInit {
       nonNullable: true,
       validators: [Validators.required, Validators.min(1), Validators.max(5)],
     }),
-    comentario: new FormControl('', { nonNullable: true }),
+    // el mail pide "un comentario corto": hasta 300 caracteres
+    comentario: new FormControl('', { nonNullable: true, validators: [Validators.maxLength(300)] }),
   });
 
   private peliculaId!: string;

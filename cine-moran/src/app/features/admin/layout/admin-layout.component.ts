@@ -37,6 +37,7 @@ export class AdminLayoutComponent {
     {
       titulo: 'Control',
       links: [
+        { ruta: '/admin/reportes', texto: 'Reportes' },
         { ruta: '/admin/actividad', texto: 'Actividad' },
         { ruta: '/admin/validar', texto: 'Validar entrada' },
       ],

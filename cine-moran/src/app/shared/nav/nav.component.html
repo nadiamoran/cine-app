@@ -1,5 +1,7 @@
 <nav [class.nav-abierto]="menuAbierto()">
-  <a class="marca" routerLink="/" (click)="cerrarMenu()">Cine<span>Moran</span></a>
+  <a class="marca" routerLink="/" (click)="cerrarMenu()">
+    <img class="logo-nav" src="logo-cinemoran.png" alt="CineMoran" />
+  </a>
 
   <!-- solo se ve en pantallas chicas: abre y cierra los links -->
   <button

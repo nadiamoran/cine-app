@@ -1,13 +1,16 @@
 <!-- título a la izquierda y el botón "Nuevo" a la derecha -->
 <div class="encabezado-admin">
-  <h1>Combos</h1>
+  <div>
+    <h1>Combos</h1>
+    <p class="subtitulo-admin">Combos a precio fijo que se destacan en la compra de entradas.</p>
+  </div>
   @if (!mostrarFormulario()) {
     <button type="button" (click)="onNuevoCombo()">+ Nuevo combo</button>
   }
 </div>
 
 @if (mostrarFormulario()) {
-<h2>Agregar combo</h2>
+<h2>{{ editandoId() ? 'Editar combo' : 'Agregar combo' }}</h2>
 
 <form novalidate [formGroup]="comboForm" (ngSubmit)="onSubmit()">
   <label>
@@ -20,7 +23,10 @@
 
   <label>
     Precio fijo del combo
-    <input type="number" min="0" formControlName="precio" />
+    <input type="number" min="1" step="1" formControlName="precio" />
+    @if (comboForm.controls.precio.touched && comboForm.controls.precio.invalid) {
+      <small class="error">El precio tiene que ser un número entero mayor a $0</small>
+    }
   </label>
 
   <label>
@@ -44,12 +50,12 @@
   }
 
   <label>
-    Foto
+    {{ imagenActual() ? 'Foto (elegí una solo si querés reemplazarla)' : 'Foto' }}
     <input #inputImagen type="file" accept="image/*" (change)="onArchivoSeleccionado($event)" />
   </label>
 
-  @if (previewUrl()) {
-    <img [src]="previewUrl()" alt="Vista previa" class="preview-imagen" />
+  @if (previewUrl() ?? imagenActual(); as imagen) {
+    <img [src]="imagen" alt="Vista previa" class="preview-imagen" />
   }
 
   @if (errorMsg()) {
@@ -57,7 +63,7 @@
   }
 
   <button type="submit" [disabled]="guardando()">
-    {{ guardando() ? 'Guardando...' : 'Guardar combo' }}
+    {{ guardando() ? 'Guardando...' : (editandoId() ? 'Guardar cambios' : 'Guardar combo') }}
   </button>
   <button type="button" class="btn-secundario" (click)="onCancelar()">Cancelar</button>
 </form>
@@ -70,36 +76,79 @@
   <p>{{ exito() }}</p>
 }
 
+<!-- buscador y filtro del listado -->
+<div class="filtros">
+  <div class="buscador">
+    <svg class="buscador-icono" viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="11" cy="11" r="7" />
+      <path d="M20 20l-3.5-3.5" />
+    </svg>
+    <input
+      type="text"
+      placeholder="Buscar combo..."
+      [value]="busqueda()"
+      (input)="busqueda.set($any($event.target).value)"
+    />
+  </div>
+  <select [value]="filtro()" (change)="filtro.set($any($event.target).value)">
+    <option value="">Todos los estados</option>
+    <option value="activo">Activos</option>
+    <option value="inactivo">Inactivos</option>
+  </select>
+</div>
+
 @if (cargando() && combos().length === 0) {
   <p>Cargando...</p>
 } @else if (combos().length === 0) {
   <p>Todavía no hay combos cargados.</p>
+} @else if (combosFiltrados().length === 0) {
+  <p>No hay combos que coincidan con la búsqueda.</p>
 } @else {
-  @for (combo of combos(); track combo.id) {
-    <article class="cupon-item">
-      @if (combo.imagenUrl) {
-        <img [src]="combo.imagenUrl" [alt]="combo.nombre" class="miniatura-combo" />
-      }
-      <div>
-        <strong>{{ combo.nombre }}</strong> · ${{ combo.precio }}
-        <p class="detalle-seleccion">
-          {{ detalleCombo(combo) }}
-          <span [class]="'badge-estado ' + (combo.activo ? 'estado-habilitada' : 'estado-deshabilitada')">
-            {{ combo.activo ? 'Activo' : 'Inactivo' }}
-          </span>
-        </p>
-      </div>
+  <!-- listado en forma de tabla, igual que Películas -->
+  <div class="tabla-admin">
+    <div class="tabla-admin-encabezado">
+      <span>Combo y detalles</span>
+      <span>Precio</span>
+      <span>Estado</span>
+      <span>Acción</span>
+    </div>
 
-      <label class="estado-pelicula">
-        Estado
-        <select
-          [disabled]="guardandoId() === combo.id"
-          (change)="onCambiarEstado(combo, $any($event.target).value)"
-        >
-          <option value="activo" [selected]="combo.activo">Activo</option>
-          <option value="inactivo" [selected]="!combo.activo">Inactivo</option>
-        </select>
-      </label>
-    </article>
-  }
+    @for (combo of combosFiltrados(); track combo.id) {
+      <article class="tabla-admin-fila">
+        <div class="fila-principal">
+          @if (combo.imagenUrl) {
+            <img class="fila-miniatura" [src]="combo.imagenUrl" [alt]="combo.nombre" />
+          } @else {
+            <div class="fila-miniatura fila-poster-vacio">Sin foto</div>
+          }
+          <div class="fila-datos">
+            <strong>{{ combo.nombre }}</strong>
+            <span>{{ detalleCombo(combo) }}</span>
+          </div>
+        </div>
+
+        <div class="fila-celda fila-precio">${{ combo.precio | number: '1.0-0' }}</div>
+
+        <div class="fila-celda">
+          <span [class]="'select-estado estado-' + (combo.activo ? 'activo' : 'inactivo')">
+            <select
+              [disabled]="guardandoId() === combo.id"
+              (change)="onCambiarEstado(combo, $any($event.target).value)"
+              aria-label="Estado del combo"
+            >
+              <option value="activo" [selected]="combo.activo">Activo</option>
+              <option value="inactivo" [selected]="!combo.activo">Inactivo</option>
+            </select>
+          </span>
+        </div>
+
+        <div class="fila-celda fila-accion">
+          <button type="button" class="btn-secundario btn-editar" (click)="onEditar(combo)">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4z" /></svg>
+            Editar
+          </button>
+        </div>
+      </article>
+    }
+  </div>
 }

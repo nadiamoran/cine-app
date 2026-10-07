@@ -47,6 +47,9 @@
   <label>
     Nombre
     <input type="text" formControlName="nombre" placeholder="Jubilados" />
+    @if (nuevoCuponForm.controls.nombre.touched && nuevoCuponForm.controls.nombre.invalid) {
+      <small class="error">El nombre es obligatorio</small>
+    }
   </label>
 
   <label>

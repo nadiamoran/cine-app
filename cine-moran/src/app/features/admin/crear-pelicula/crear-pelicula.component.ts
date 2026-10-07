@@ -1,4 +1,4 @@
-import { Component, ElementRef, OnInit, ViewChild, signal } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild, computed, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DatePipe } from '@angular/common';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -8,6 +8,10 @@ import { FuncionesService } from '../../funciones/funciones.service';
 import { PrecioEntrada } from '../../funciones/funcion.model';
 import { infoPreventa } from '../../catalogo/preventa.utils';
 import { TablaPreventaComponent } from './tabla-preventa.component';
+import { fechaEnRangoValidator } from '../../../shared/validators/fecha.validators';
+
+// estreno: desde 1900 hasta 5 años adelante
+const anioMaximoEstreno = new Date().getFullYear() + 5;
 
 @Component({
   selector: 'app-crear-pelicula',
@@ -20,8 +24,10 @@ export class CrearPeliculaComponent implements OnInit {
 
   @ViewChild('inputImagen') inputImagen?: ElementRef<HTMLInputElement>;
 
-  // el formulario de alta queda oculto hasta que se toca "Nueva película"
+  // el formulario queda oculto hasta que se toca "Nueva película" o "Editar"
   mostrarFormulario = signal(false);
+  // null = creando una película nueva; con id = editando esa película
+  editandoId = signal<string | null>(null);
   guardando = signal(false);
   errorMsg = signal<string | null>(null);
 
@@ -31,17 +37,32 @@ export class CrearPeliculaComponent implements OnInit {
   // peliculas ya cargadas, para poder cambiarles el estado
   cargando = signal(true);
   peliculas = signal<Pelicula[]>([]);
+
+  // buscador por nombre y filtro por estado del listado
+  busqueda = signal('');
+  filtroEstado = signal<EstadoPelicula | ''>('');
+
+  // se recalcula solo cuando cambian las películas, la búsqueda o el filtro
+  peliculasFiltradas = computed(() => {
+    const texto = this.busqueda().trim().toLowerCase();
+    const estado = this.filtroEstado();
+    return this.peliculas().filter(
+      (p) => (!texto || p.nombre.toLowerCase().includes(texto)) && (!estado || p.estado === estado),
+    );
+  });
   guardandoId = signal<string | null>(null);
 
   // generos que ya existen en otras peliculas; el admin elige de esta lista
   generosDisponibles = signal<string[]>([]);
 
   peliculaForm = new FormGroup({
-    nombre: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+    // pattern(/\S/): al menos un carácter que no sea espacio ("   " no vale)
+    nombre: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.pattern(/\S/)] }),
     sinopsis: new FormControl('', { nonNullable: true }),
+    // entera y con máximo: una duración absurda bloquearía la sala por días
     duracionMinutos: new FormControl(90, {
       nonNullable: true,
-      validators: [Validators.required, Validators.min(1)],
+      validators: [Validators.required, Validators.min(1), Validators.max(600), Validators.pattern(/^\d+$/)],
     }),
     generos: new FormControl<string[]>([], {
       nonNullable: true,
@@ -49,7 +70,10 @@ export class CrearPeliculaComponent implements OnInit {
     }),
     restriccionEdad: new FormControl('sin_restriccion', { nonNullable: true }),
     estado: new FormControl<EstadoPelicula>('en_cartelera', { nonNullable: true }),
-    fechaEstreno: new FormControl('', { nonNullable: true }),
+    fechaEstreno: new FormControl('', {
+      nonNullable: true,
+      validators: [fechaEnRangoValidator(1900, anioMaximoEstreno)],
+    }),
     // RF-29: preventa (necesita fecha de estreno)
     tienePreventa: new FormControl({ value: false, disabled: true }, { nonNullable: true }),
     preventaDescuento: new FormControl<number | null>(null),
@@ -61,28 +85,15 @@ export class CrearPeliculaComponent implements OnInit {
   // ---- RF-29: preventa ----
   // tabla general de precios, para la vista previa con el descuento
   precios = signal<PrecioEntrada[]>([]);
-  // película cuyo panel "Preventa" está abierto en el listado
-  preventaEditandoId = signal<string | null>(null);
-  guardandoPreventa = signal(false);
-  errorPreventa = signal<string | null>(null);
-
-  // las películas ya creadas no se editan: este form cambia solo estreno + preventa
-  preventaForm = new FormGroup({
-    fechaEstreno: new FormControl('', { nonNullable: true }),
-    tienePreventa: new FormControl({ value: false, disabled: true }, { nonNullable: true }),
-    preventaDescuento: new FormControl<number | null>(null),
-  });
 
   constructor(
     private peliculasService: PeliculasService,
     private funcionesService: FuncionesService,
   ) {
     // sin fecha de estreno no hay preventa: la casilla queda deshabilitada
-    for (const form of [this.peliculaForm, this.preventaForm]) {
-      form.controls.fechaEstreno.valueChanges
-        .pipe(takeUntilDestroyed())
-        .subscribe((fecha) => this.habilitarPreventa(form.controls.tienePreventa, !!fecha));
-    }
+    this.peliculaForm.controls.fechaEstreno.valueChanges
+      .pipe(takeUntilDestroyed())
+      .subscribe((fecha) => this.habilitarPreventa(this.peliculaForm.controls.tienePreventa, !!fecha));
   }
 
   async ngOnInit() {
@@ -111,6 +122,21 @@ export class CrearPeliculaComponent implements OnInit {
     return null;
   }
 
+  // columna "Preventa" del listado
+  estadoPreventa(pelicula: Pelicula) {
+    return infoPreventa(pelicula).estado;
+  }
+
+  etiquetaPreventa(pelicula: Pelicula): string {
+    const etiquetas = {
+      sin_preventa: 'Sin preventa',
+      por_abrir: 'Programada',
+      abierta: 'Preventa activa',
+      terminada: 'Terminada',
+    };
+    return etiquetas[infoPreventa(pelicula).estado];
+  }
+
   // texto corto para la fila del listado
   resumenPreventa(pelicula: Pelicula): string | null {
     const info = infoPreventa(pelicula);
@@ -119,47 +145,6 @@ export class CrearPeliculaComponent implements OnInit {
     if (info.estado === 'abierta') return `Preventa abierta: -$${info.descuento}`;
     const apertura = info.apertura!.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' });
     return `Preventa: -$${info.descuento} · abre el ${apertura}`;
-  }
-
-  onAbrirPreventa(pelicula: Pelicula) {
-    this.errorPreventa.set(null);
-    this.preventaForm.setValue({
-      fechaEstreno: pelicula.fechaEstreno ?? '',
-      tienePreventa: pelicula.preventaDescuento !== null,
-      preventaDescuento: pelicula.preventaDescuento,
-    });
-    this.habilitarPreventa(this.preventaForm.controls.tienePreventa, !!pelicula.fechaEstreno);
-    this.preventaEditandoId.set(pelicula.id);
-  }
-
-  onCancelarPreventa() {
-    this.preventaEditandoId.set(null);
-    this.errorPreventa.set(null);
-  }
-
-  async onGuardarPreventa(pelicula: Pelicula) {
-    const { fechaEstreno, tienePreventa, preventaDescuento } = this.preventaForm.getRawValue();
-    const error = this.validarPreventa(fechaEstreno, tienePreventa, preventaDescuento);
-    if (error) {
-      this.errorPreventa.set(error);
-      return;
-    }
-
-    this.guardandoPreventa.set(true);
-    const resultado = await this.peliculasService.actualizarPreventa(
-      pelicula.id,
-      fechaEstreno || null,
-      tienePreventa ? preventaDescuento : null,
-    );
-    this.guardandoPreventa.set(false);
-
-    if (resultado.error) {
-      this.errorPreventa.set(resultado.error);
-      return;
-    }
-
-    this.preventaEditandoId.set(null);
-    await this.recargar();
   }
 
   private async recargar() {
@@ -261,12 +246,13 @@ export class CrearPeliculaComponent implements OnInit {
 
     this.guardando.set(true);
 
+    // al editar, si no se elige otra imagen queda la que ya tenía
     let imagenUrl: string | null = null;
     if (this.archivoImagen()) {
       imagenUrl = await this.peliculasService.subirImagen(this.archivoImagen()!);
     }
 
-    const { error } = await this.peliculasService.crear({
+    const datos = {
       nombre: valores.nombre,
       sinopsis: valores.sinopsis,
       duracionMinutos: valores.duracionMinutos,
@@ -276,7 +262,12 @@ export class CrearPeliculaComponent implements OnInit {
       imagenUrl,
       estado: valores.estado,
       preventaDescuento: valores.tienePreventa ? valores.preventaDescuento : null,
-    });
+    };
+
+    const id = this.editandoId();
+    const { error } = id
+      ? await this.peliculasService.actualizar(id, datos)
+      : await this.peliculasService.crear(datos);
 
     this.guardando.set(false);
 
@@ -286,17 +277,43 @@ export class CrearPeliculaComponent implements OnInit {
     }
 
     this.limpiarFormulario();
+    this.editandoId.set(null);
     this.mostrarFormulario.set(false);
     await this.recargar();
   }
 
   onNuevaPelicula() {
     this.limpiarFormulario();
+    this.editandoId.set(null);
     this.mostrarFormulario.set(true);
+  }
+
+  // abre el mismo formulario del alta con los datos de la película
+  onEditar(pelicula: Pelicula) {
+    this.limpiarFormulario();
+    this.peliculaForm.setValue({
+      nombre: pelicula.nombre,
+      sinopsis: pelicula.sinopsis ?? '',
+      duracionMinutos: pelicula.duracionMinutos,
+      generos: [...pelicula.generos],
+      restriccionEdad: pelicula.restriccionEdad,
+      estado: pelicula.estado,
+      fechaEstreno: pelicula.fechaEstreno ?? '',
+      tienePreventa: pelicula.preventaDescuento !== null,
+      preventaDescuento: pelicula.preventaDescuento,
+    });
+    this.habilitarPreventa(this.peliculaForm.controls.tienePreventa, !!pelicula.fechaEstreno);
+    // muestra la imagen actual; si se elige otra, la reemplaza al guardar
+    this.previewUrl.set(pelicula.imagen_url);
+    this.editandoId.set(pelicula.id);
+    this.mostrarFormulario.set(true);
+    // el formulario está arriba del listado: lo llevo a la vista
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   onCancelar() {
     this.limpiarFormulario();
+    this.editandoId.set(null);
     this.mostrarFormulario.set(false);
   }
 

@@ -59,11 +59,11 @@ export class GestionarSalasComponent implements OnInit {
           formato: new FormControl<Formato>(p.formato, { nonNullable: true }),
           precio: new FormControl(p.precio, {
             nonNullable: true,
-            validators: [Validators.required, Validators.min(0)],
+            validators: [Validators.required, Validators.min(1), Validators.pattern(/^\d+$/)],
           }),
           precioVip: new FormControl(p.precioVip, {
             nonNullable: true,
-            validators: [Validators.required, Validators.min(0)],
+            validators: [Validators.required, Validators.min(1), Validators.pattern(/^\d+$/)],
           }),
         }),
       );
@@ -83,7 +83,7 @@ export class GestionarSalasComponent implements OnInit {
 
     if (this.preciosForm.invalid) {
       this.preciosForm.markAllAsTouched();
-      this.errorPrecios.set('Completá todos los precios.');
+      this.errorPrecios.set('Completá todos los precios con números enteros mayores a $0.');
       return;
     }
     if (this.preciosForm.controls.some((_, i) => this.vipNoEsMayor(i))) {

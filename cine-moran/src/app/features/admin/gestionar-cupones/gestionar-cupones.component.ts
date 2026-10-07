@@ -17,7 +17,7 @@ export class GestionarCuponesComponent implements OnInit {
   creando = signal(false);
 
   nuevoCuponForm = new FormGroup({
-    nombre: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+    nombre: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.pattern(/\S/)] }),
     porcentaje: new FormControl(10, { nonNullable: true, validators: [Validators.required, Validators.min(1), Validators.max(100)] }),
     edadMinima: new FormControl(50, { nonNullable: true, validators: [Validators.required, Validators.min(1)] }),
   });

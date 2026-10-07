@@ -68,6 +68,9 @@
   <label>
     Desde
     <input type="date" formControlName="desde" />
+    @if (programacionForm.controls.desde.touched && programacionForm.controls.desde.errors?.['fechaFueraDeRango']) {
+      <small class="error">Ingresá una fecha válida (año de 4 cifras)</small>
+    }
   </label>
 
   <div class="campo-generos">
@@ -78,6 +81,9 @@
       <button type="button" class="chip-genero" (click)="onAtajoPeriodo('fin-de-mes')">Hasta fin de mes</button>
     </div>
     <input type="date" formControlName="hasta" />
+    @if (programacionForm.controls.hasta.touched && programacionForm.controls.hasta.errors?.['fechaFueraDeRango']) {
+      <small class="error">Ingresá una fecha válida (año de 4 cifras)</small>
+    }
   </div>
 
   <label>
@@ -101,7 +107,6 @@
   @if (precioDe(programacionForm.controls.formato.value); as precio) {
     <p class="detalle-seleccion">
       Precio según formato: ${{ precio.precio }} · VIP ${{ precio.precioVip }}
-      (se cambia en Salas → Precios de entradas)
     </p>
   }
 
@@ -146,7 +151,7 @@
 } @else if (mostrarFormulario()) {
 <h2>{{ editandoId() ? 'Editar función' : 'Agregar función' }}</h2>
 
-<p>La sala se asigna sola: el sistema busca la primera que esté libre en ese horario.</p>
+<p>Asignación de salas de forma automática</p>
 
 <form novalidate [formGroup]="funcionForm" (ngSubmit)="onSubmit()">
   <label>
@@ -165,6 +170,9 @@
   <label>
     Fecha
     <input type="date" formControlName="fecha" />
+    @if (funcionForm.controls.fecha.touched && funcionForm.controls.fecha.errors?.['fechaFueraDeRango']) {
+      <small class="error">Ingresá una fecha válida (año de 4 cifras)</small>
+    }
   </label>
 
   <label>
@@ -193,7 +201,6 @@
   @if (precioDe(funcionForm.controls.formato.value); as precio) {
     <p class="detalle-seleccion">
       Precio según formato: ${{ precio.precio }} · VIP ${{ precio.precioVip }}
-      (se cambia en Salas → Precios de entradas)
     </p>
   }
 
@@ -215,12 +222,30 @@
   <p>{{ exito() }}</p>
 }
 
+<!-- buscador y filtro del listado -->
+<div class="filtros">
+  <input
+    type="text"
+    placeholder="Buscar por película..."
+    [value]="busqueda()"
+    (input)="busqueda.set($any($event.target).value)"
+  />
+  <select [value]="filtro()" (change)="filtro.set($any($event.target).value)">
+    <option value="">Todos los formatos</option>
+    @for (opcion of opcionesFiltro; track opcion.valor) {
+      <option [value]="opcion.valor">{{ opcion.etiqueta }}</option>
+    }
+  </select>
+</div>
+
 @if (cargando() && funciones().length === 0) {
   <p>Cargando...</p>
 } @else if (funciones().length === 0) {
   <p>No hay funciones programadas.</p>
+} @else if (funcionesFiltradas().length === 0) {
+  <p>No hay funciones que coincidan con la búsqueda.</p>
 } @else {
-  @for (funcion of funciones(); track funcion.id) {
+  @for (funcion of funcionesFiltradas(); track funcion.id) {
     <article class="cupon-item">
       <div>
         <strong>{{ funcion.nombrePelicula }}</strong>

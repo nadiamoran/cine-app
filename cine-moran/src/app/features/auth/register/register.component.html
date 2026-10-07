@@ -19,10 +19,15 @@
 
   <label>
     Fecha de nacimiento
-    <input type="date" formControlName="fechaNacimiento" />
+    <input type="date" formControlName="fechaNacimiento" min="1900-01-01" max="2099-12-31" />
     @if (registerForm.controls.fechaNacimiento.touched && registerForm.controls.fechaNacimiento.invalid) {
       @if (registerForm.controls.fechaNacimiento.errors?.['required']) {
         <small class="error">La fecha de nacimiento es obligatoria</small>
+      } @else if (
+        registerForm.controls.fechaNacimiento.errors?.['fechaInvalida'] ||
+        registerForm.controls.fechaNacimiento.errors?.['fechaFueraDeRango']
+      ) {
+        <small class="error">Ingresá una fecha válida (año de 4 cifras, desde 1900)</small>
       } @else if (registerForm.controls.fechaNacimiento.errors?.['fechaFutura']) {
         <small class="error">La fecha no puede ser posterior a hoy</small>
       }

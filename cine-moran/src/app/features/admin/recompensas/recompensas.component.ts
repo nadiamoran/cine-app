@@ -1,4 +1,4 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, computed, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RecompensasService } from '../../puntos/recompensas.service';
 import { Recompensa, TipoRecompensa } from '../../puntos/recompensa.model';
@@ -19,6 +19,19 @@ export class RecompensasComponent implements OnInit {
 
   cargando = signal(true);
   recompensas = signal<Recompensa[]>([]);
+
+  // buscador y filtro del listado (mismo mecanismo que en Películas)
+  busqueda = signal('');
+  filtro = signal('');
+
+  // se recalcula solo cuando cambian la lista, la búsqueda o el filtro
+  recompensasFiltradas = computed(() => {
+    const texto = this.busqueda().trim().toLowerCase();
+    const filtro = this.filtro();
+    return this.recompensas().filter(
+      (f) => (!texto || (f.nombre).toLowerCase().includes(texto)) && (!filtro || f.tipo === filtro),
+    );
+  });
   productos = signal<Producto[]>([]);
   guardandoId = signal<string | null>(null);
 

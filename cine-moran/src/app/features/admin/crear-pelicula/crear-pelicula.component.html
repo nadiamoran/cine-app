@@ -1,13 +1,16 @@
 <!-- título a la izquierda y el botón "Nuevo" a la derecha -->
 <div class="encabezado-admin">
-  <h1>Películas</h1>
+  <div>
+    <h1>Películas</h1>
+    <p class="subtitulo-admin">Gestión del catálogo, estado de preventas y cartelera.</p>
+  </div>
   @if (!mostrarFormulario()) {
     <button type="button" (click)="onNuevaPelicula()">+ Nueva película</button>
   }
 </div>
 
 @if (mostrarFormulario()) {
-<h2>Agregar película</h2>
+<h2>{{ editandoId() ? 'Editar película' : 'Agregar película' }}</h2>
 
 <form novalidate [formGroup]="peliculaForm" (ngSubmit)="onSubmit()">
   <label>
@@ -27,7 +30,10 @@
     Duración (minutos)
     <input type="number" formControlName="duracionMinutos" />
     @if (peliculaForm.controls.duracionMinutos.touched && peliculaForm.controls.duracionMinutos.invalid) {
-      <small class="error">Ingresá una duración de al menos 1 minuto</small>
+      <small class="error">Ingresá una duración en minutos enteros, entre 1 y 600</small>
+    }
+    @if (editandoId()) {
+      <small>Cambiar la duración no modifica las funciones que ya están programadas.</small>
     }
   </label>
 
@@ -82,7 +88,10 @@
 
   <label>
     Fecha de estreno
-    <input type="date" formControlName="fechaEstreno" />
+    <input type="date" formControlName="fechaEstreno" min="1900-01-01" max="2099-12-31" />
+    @if (peliculaForm.controls.fechaEstreno.invalid) {
+      <small class="error">Ingresá una fecha válida (año de 4 cifras, desde 1900 hasta 5 años adelante)</small>
+    }
   </label>
 
   <fieldset class="bloque-preventa">
@@ -107,7 +116,7 @@
   </fieldset>
 
   <label>
-    Imagen
+    {{ editandoId() ? 'Imagen (elegí otra solo si querés cambiarla)' : 'Imagen' }}
     <input #inputImagen type="file" accept="image/*" (change)="onArchivoSeleccionado($event)" />
   </label>
 
@@ -120,91 +129,101 @@
   }
 
   <button type="submit" [disabled]="guardando()">
-    {{ guardando() ? 'Guardando...' : 'Guardar película' }}
+    {{ guardando() ? 'Guardando...' : (editandoId() ? 'Guardar cambios' : 'Guardar película') }}
   </button>
   <button type="button" class="btn-secundario" (click)="onCancelar()">Cancelar</button>
 </form>
 }
 
+<!-- buscador y filtro del listado -->
+<div class="filtros">
+  <div class="buscador">
+    <svg class="buscador-icono" viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="11" cy="11" r="7" />
+      <path d="M20 20l-3.5-3.5" />
+    </svg>
+    <input
+      type="text"
+      placeholder="Buscar película..."
+      [value]="busqueda()"
+      (input)="busqueda.set($any($event.target).value)"
+    />
+  </div>
+  <select [value]="filtroEstado()" (change)="filtroEstado.set($any($event.target).value)">
+    <option value="">Todos los estados</option>
+    @for (estado of estados; track estado.valor) {
+      <option [value]="estado.valor">{{ estado.etiqueta }}</option>
+    }
+  </select>
+</div>
+
 @if (cargando() && peliculas().length === 0) {
   <p>Cargando...</p>
 } @else if (peliculas().length === 0) {
   <p>Todavía no hay películas cargadas.</p>
+} @else if (peliculasFiltradas().length === 0) {
+  <p>No hay películas que coincidan con la búsqueda.</p>
 } @else {
-  @for (pelicula of peliculas(); track pelicula.id) {
-    <article class="cupon-item">
-      <div>
-        <strong>{{ pelicula.nombre }}</strong>
-        <p class="detalle-seleccion">
-          {{ pelicula.generos.join(', ') }}
-          <span [class]="'badge-estado estado-' + pelicula.estado">
-            {{ etiquetaEstado(pelicula.estado) }}
+  <!-- listado en forma de tabla: una fila por película -->
+  <div class="tabla-admin">
+    <div class="tabla-admin-encabezado">
+      <span>Película y detalles</span>
+      <span>Preventa</span>
+      <span>Estado</span>
+      <span>Acción</span>
+    </div>
+
+    @for (pelicula of peliculasFiltradas(); track pelicula.id) {
+      <article class="tabla-admin-fila">
+        <div class="fila-principal">
+          @if (pelicula.imagen_url) {
+            <img class="fila-poster" [src]="pelicula.imagen_url" [alt]="pelicula.nombre" />
+          } @else {
+            <div class="fila-poster fila-poster-vacio">Sin imagen</div>
+          }
+          <div class="fila-datos">
+            <strong>{{ pelicula.nombre }}</strong>
+            <span>{{ pelicula.generos.join(', ') }}</span>
+            <span>
+              Estreno:
+              <b>{{ pelicula.fechaEstreno ? (pelicula.fechaEstreno | date: 'dd/MM/yyyy') : 'sin fecha' }}</b>
+              @if (resumenPreventa(pelicula); as resumen) {
+                · <span class="texto-preventa">{{ resumen }}</span>
+              }
+            </span>
+          </div>
+        </div>
+
+        <div class="fila-celda">
+          <span [class]="'badge-preventa preventa-' + estadoPreventa(pelicula)">
+            {{ etiquetaPreventa(pelicula) }}
           </span>
-        </p>
-        <p class="detalle-seleccion">
-          Estreno: {{ pelicula.fechaEstreno ? (pelicula.fechaEstreno | date: 'dd/MM/yyyy') : 'sin fecha' }}
-          @if (resumenPreventa(pelicula); as resumen) {
-            · <span class="texto-preventa">{{ resumen }}</span>
-          }
-        </p>
-        @if (preventaEditandoId() !== pelicula.id) {
-          <button type="button" class="btn-secundario" (click)="onAbrirPreventa(pelicula)">Preventa</button>
-        }
-      </div>
+        </div>
 
-      <label class="estado-pelicula">
-        Estado
-        <select
-          [value]="pelicula.estado"
-          [disabled]="guardandoId() === pelicula.id"
-          (change)="onCambiarEstado(pelicula, $any($event.target).value)"
-        >
-          @for (estado of estados; track estado.valor) {
-            <option [value]="estado.valor" [selected]="estado.valor === pelicula.estado">
-              {{ estado.etiqueta }}
-            </option>
-          }
-        </select>
-      </label>
-    </article>
+        <div class="fila-celda">
+          <span [class]="'select-estado estado-' + pelicula.estado">
+            <select
+              [value]="pelicula.estado"
+              [disabled]="guardandoId() === pelicula.id"
+              (change)="onCambiarEstado(pelicula, $any($event.target).value)"
+              aria-label="Estado de la película"
+            >
+              @for (estado of estados; track estado.valor) {
+                <option [value]="estado.valor" [selected]="estado.valor === pelicula.estado">
+                  {{ estado.etiqueta }}
+                </option>
+              }
+            </select>
+          </span>
+        </div>
 
-    @if (preventaEditandoId() === pelicula.id) {
-      <form novalidate class="bloque-preventa" [formGroup]="preventaForm" (ngSubmit)="onGuardarPreventa(pelicula)">
-        <h3>Preventa de {{ pelicula.nombre }}</h3>
-
-        <label>
-          Fecha de estreno
-          <input type="date" formControlName="fechaEstreno" />
-        </label>
-
-        <label class="check-preventa">
-          <input type="checkbox" formControlName="tienePreventa" />
-          Tiene preventa
-        </label>
-
-        @if (!preventaForm.controls.fechaEstreno.value) {
-          <small>Cargá la fecha de estreno para activar la preventa.</small>
-        } @else if (preventaForm.controls.tienePreventa.value) {
-          <label>
-            Descuento de preventa ($)
-            <input type="number" formControlName="preventaDescuento" min="1" step="1" />
-          </label>
-          <app-tabla-preventa
-            [precios]="precios()"
-            [descuento]="preventaForm.controls.preventaDescuento.value"
-            [fechaEstreno]="preventaForm.controls.fechaEstreno.value"
-          />
-        }
-
-        @if (errorPreventa()) {
-          <p class="error">{{ errorPreventa() }}</p>
-        }
-
-        <button type="submit" [disabled]="guardandoPreventa()">
-          {{ guardandoPreventa() ? 'Guardando...' : 'Guardar preventa' }}
-        </button>
-        <button type="button" class="btn-secundario" (click)="onCancelarPreventa()">Cancelar</button>
-      </form>
+        <div class="fila-celda fila-accion">
+          <button type="button" class="btn-secundario btn-editar" (click)="onEditar(pelicula)">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4z" /></svg>
+            Editar
+          </button>
+        </div>
+      </article>
     }
-  }
+  </div>
 }

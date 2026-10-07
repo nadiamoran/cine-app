@@ -79,12 +79,29 @@
   <p>{{ exito() }}</p>
 }
 
+<!-- buscador y filtro del listado -->
+<div class="filtros">
+  <input
+    type="text"
+    placeholder="Buscar recompensa..."
+    [value]="busqueda()"
+    (input)="busqueda.set($any($event.target).value)"
+  />
+  <select [value]="filtro()" (change)="filtro.set($any($event.target).value)">
+    <option value="">Todos los tipos</option>
+    <option value="entrada">Entradas gratis</option>
+    <option value="producto">Productos</option>
+  </select>
+</div>
+
 @if (cargando() && recompensas().length === 0) {
   <p>Cargando...</p>
 } @else if (recompensas().length === 0) {
   <p>Todavía no hay recompensas. Creá la primera para que los puntos se puedan canjear.</p>
+} @else if (recompensasFiltradas().length === 0) {
+  <p>No hay recompensas que coincidan con la búsqueda.</p>
 } @else {
-  @for (recompensa of recompensas(); track recompensa.id) {
+  @for (recompensa of recompensasFiltradas(); track recompensa.id) {
     <article class="cupon-item">
       <div>
         <strong>{{ recompensa.nombre }}</strong>

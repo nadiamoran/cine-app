@@ -1,6 +1,9 @@
 <!-- título a la izquierda y el botón "Nuevo" a la derecha -->
 <div class="encabezado-admin">
-  <h1>Productos</h1>
+  <div>
+    <h1>Productos</h1>
+    <p class="subtitulo-admin">Candy bar: productos, categorías, precios y fotos.</p>
+  </div>
   @if (!mostrarFormulario()) {
     <button type="button" (click)="onNuevoProducto()">+ Nuevo producto</button>
   }
@@ -43,7 +46,10 @@
 
   <label>
     Precio
-    <input type="number" min="0" formControlName="precio" />
+    <input type="number" min="1" step="1" formControlName="precio" />
+    @if (productoForm.controls.precio.touched && productoForm.controls.precio.invalid) {
+      <small class="error">El precio tiene que ser un número entero mayor a $0</small>
+    }
   </label>
 
   <label>
@@ -73,38 +79,80 @@
   <p>{{ exito() }}</p>
 }
 
+<!-- buscador y filtro del listado -->
+<div class="filtros">
+  <div class="buscador">
+    <svg class="buscador-icono" viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="11" cy="11" r="7" />
+      <path d="M20 20l-3.5-3.5" />
+    </svg>
+    <input
+      type="text"
+      placeholder="Buscar producto..."
+      [value]="busqueda()"
+      (input)="busqueda.set($any($event.target).value)"
+    />
+  </div>
+  <select [value]="filtro()" (change)="filtro.set($any($event.target).value)">
+    <option value="">Todas las categorías</option>
+    @for (categoria of categorias(); track categoria.id) {
+      <option [value]="categoria.id">{{ categoria.nombre }}</option>
+    }
+  </select>
+</div>
+
 @if (cargando() && productos().length === 0) {
   <p>Cargando...</p>
 } @else if (productos().length === 0) {
   <p>Todavía no hay productos cargados.</p>
+} @else if (productosFiltrados().length === 0) {
+  <p>No hay productos que coincidan con la búsqueda.</p>
 } @else {
-  @for (producto of productos(); track producto.id) {
-    <article class="cupon-item">
-      @if (producto.imagenUrl) {
-        <img [src]="producto.imagenUrl" [alt]="producto.nombre" class="miniatura-combo" />
-      }
-      <div>
-        <strong>{{ producto.nombre }}</strong> · ${{ producto.precio }}
-        <p class="detalle-seleccion">
-          {{ nombreCategoria(producto.categoriaId) }}
-          <span [class]="'badge-estado ' + (producto.activo ? 'estado-habilitada' : 'estado-deshabilitada')">
-            {{ producto.activo ? 'Activo' : 'Dado de baja' }}
+  <!-- listado en forma de tabla, igual que Películas -->
+  <div class="tabla-admin">
+    <div class="tabla-admin-encabezado">
+      <span>Producto y categoría</span>
+      <span>Precio</span>
+      <span>Estado</span>
+      <span>Acción</span>
+    </div>
+
+    @for (producto of productosFiltrados(); track producto.id) {
+      <article class="tabla-admin-fila">
+        <div class="fila-principal">
+          @if (producto.imagenUrl) {
+            <img class="fila-miniatura" [src]="producto.imagenUrl" [alt]="producto.nombre" />
+          } @else {
+            <div class="fila-miniatura fila-poster-vacio">Sin foto</div>
+          }
+          <div class="fila-datos">
+            <strong>{{ producto.nombre }}</strong>
+            <span>{{ nombreCategoria(producto.categoriaId) }}</span>
+          </div>
+        </div>
+
+        <div class="fila-celda fila-precio">${{ producto.precio | number: '1.0-0' }}</div>
+
+        <div class="fila-celda">
+          <span [class]="'select-estado estado-' + (producto.activo ? 'activo' : 'inactivo')">
+            <select
+              [disabled]="guardandoId() === producto.id"
+              (change)="onCambiarEstado(producto, $any($event.target).value)"
+              aria-label="Estado del producto"
+            >
+              <option value="activo" [selected]="producto.activo">Activo</option>
+              <option value="baja" [selected]="!producto.activo">Dado de baja</option>
+            </select>
           </span>
-        </p>
-      </div>
+        </div>
 
-      <label class="estado-pelicula">
-        Estado
-        <select
-          [disabled]="guardandoId() === producto.id"
-          (change)="onCambiarEstado(producto, $any($event.target).value)"
-        >
-          <option value="activo" [selected]="producto.activo">Activo</option>
-          <option value="baja" [selected]="!producto.activo">Dado de baja</option>
-        </select>
-      </label>
-
-      <button type="button" class="btn-secundario" (click)="onEditar(producto)">Editar</button>
-    </article>
-  }
+        <div class="fila-celda fila-accion">
+          <button type="button" class="btn-secundario btn-editar" (click)="onEditar(producto)">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4z" /></svg>
+            Editar
+          </button>
+        </div>
+      </article>
+    }
+  </div>
 }

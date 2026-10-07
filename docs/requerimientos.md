@@ -182,7 +182,7 @@ Prioridad: **A** = imprescindible (lo pidió el cliente y define el sistema), **
 
 ## 5. Modelo de datos
 
-Tablas que existen hoy en Supabase (creadas por `supabase/schema.sql` y las migraciones 001 a 026):
+Tablas que existen hoy en Supabase (creadas por `supabase/schema.sql` y las migraciones 001 a 027):
 
 | Tabla | Para qué |
 |---|---|
@@ -205,6 +205,8 @@ Tablas que existen hoy en Supabase (creadas por `supabase/schema.sql` y las migr
 | `recompensas` | Lo que se paga con puntos y cuántos puntos cuesta: entrada general gratis (para cualquier formato o uno solo) o un producto del candy bar. La configura el admin; no se borran, se desactivan |
 | `puntos_movimientos` | Historial de puntos de cada usuario (es el historial de canjes del perfil): + por compra, − por canje, y los ajustes al cancelar |
 | `activity_log` | Log de actividad del personal: quién (nombre y rol), qué acción, detalle y fecha y hora. Lo llenan triggers de la base; solo el admin lo lee y nadie lo puede editar ni borrar desde la app |
+
+Los reportes no tienen tablas propias: se calculan en el momento con tres funciones de la base (migración 027) que agrupan y suman los datos de `ordenes`, `orden_butacas`, `orden_productos` y `combo_productos`. Solo las puede usar el administrador.
 
 Diferencias con el modelo preliminar: los géneros quedaron como un arreglo dentro de `peliculas` (no hizo falta una tabla aparte), y la recurrencia no se guarda como `programaciones`: se generan todas las funciones juntas en el momento (ver S-11).
 
@@ -316,7 +318,9 @@ Referencias: ✅ implementado · 🟡 parcial · ❌ pendiente.
 | RF-49 | ✅ | Ingreso manual del código. |
 | RF-50 | ✅ | Una vez validada o retirada, el código se rechaza. También se rechaza el código de una compra cancelada, tanto para la entrada como para el candy (022). |
 | RF-51 | ✅ | Panel de administración con acceso a Películas, Funciones, Salas, Productos, Combos, Cupones, Recompensas, Actividad y Validar entrada. |
-| RF-52 a RF-54 | ❌ | Reporte de facturación, exportación a PDF y Excel, y gráficos (van en el panel de administración). |
+| RF-52 | ✅ | Pantalla Reportes del admin: facturación por día y entradas vendidas (compras confirmadas, por día de compra; las canceladas no cuentan), con período elegido por atajos (últimos 7 días, 30 días o este mes) y totales. Lo calcula la base (migración 027). |
+| RF-53 | ✅ | El reporte de facturación se exporta a PDF (jsPDF) y a Excel (.xlsx con SheetJS). |
+| RF-54 | ✅ | Gráficos de barras (HTML y CSS) de las películas más vistas (entradas vendidas para funciones de la semana o del mes) y de los productos más vendidos (sueltos, en combos y canjeados). |
 | RF-55 | ✅ | Pantalla Actividad del admin (migración 026): registra quién creó, editó o eliminó una función, quién modificó un precio (tabla de entradas, preventa, productos y combos, con antes → ahora) y quién validó una entrada o entregó el candy bar, con fecha y hora. Lo registran triggers de la base, así no se puede saltear desde el navegador; solo el admin lo lee y nadie lo puede editar ni borrar. Filtro por tipo. |
 
 ### 9.2 Requerimientos no funcionales

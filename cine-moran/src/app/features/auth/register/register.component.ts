@@ -2,7 +2,7 @@ import { Component, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/auth/auth.service';
-import { fechaNoFuturaValidator } from '../../../shared/validators/fecha.validators';
+import { fechaEnRangoValidator, fechaNoFuturaValidator } from '../../../shared/validators/fecha.validators';
 
 @Component({
   selector: 'app-register',
@@ -25,15 +25,15 @@ export class RegisterComponent {
     }),
     nombre: new FormControl('', {
       nonNullable: true,
-      validators: [Validators.required],
+      validators: [Validators.required, Validators.pattern(/\S/)],
     }),
     apellido: new FormControl('', {
       nonNullable: true,
-      validators: [Validators.required],
+      validators: [Validators.required, Validators.pattern(/\S/)],
     }),
     fechaNacimiento: new FormControl('', {
       nonNullable: true,
-      validators: [Validators.required, fechaNoFuturaValidator()],
+      validators: [Validators.required, fechaNoFuturaValidator(), fechaEnRangoValidator(1900, new Date().getFullYear())],
     }),
     tipoSangre: new FormControl('', { nonNullable: true }),
     colorOjos: new FormControl('', { nonNullable: true }),

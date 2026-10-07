@@ -19,5 +19,5 @@ export interface Combo {
   activo: boolean;
   entradasIncluidas: number; // entradas generales (no VIP) que trae el combo
   imagenUrl: string | null;
-  productos: { nombre: string; cantidad: number }[];
+  productos: { productoId: string; nombre: string; cantidad: number }[];
 }

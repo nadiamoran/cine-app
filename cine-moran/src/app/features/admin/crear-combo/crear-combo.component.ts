@@ -1,4 +1,5 @@
-import { Component, ElementRef, OnInit, ViewChild, signal } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild, computed, signal } from '@angular/core';
+import { DecimalPipe } from '@angular/common';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CandyBarService } from '../../candy-bar/candy-bar.service';
 import { Combo, Producto } from '../../candy-bar/producto.model';
@@ -7,7 +8,7 @@ import { detalleCombo } from '../../candy-bar/combo.utils';
 @Component({
   selector: 'app-crear-combo',
   standalone: true,
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, DecimalPipe],
   templateUrl: './crear-combo.component.html',
 })
 export class CrearComboComponent implements OnInit {
@@ -16,10 +17,27 @@ export class CrearComboComponent implements OnInit {
   // combos ya cargados, para poder activarlos o desactivarlos
   cargando = signal(true);
   combos = signal<Combo[]>([]);
+
+  // buscador y filtro del listado (mismo mecanismo que en Películas)
+  busqueda = signal('');
+  filtro = signal('');
+
+  // se recalcula solo cuando cambian la lista, la búsqueda o el filtro
+  combosFiltrados = computed(() => {
+    const texto = this.busqueda().trim().toLowerCase();
+    const filtro = this.filtro();
+    return this.combos().filter(
+      (f) => (!texto || (f.nombre).toLowerCase().includes(texto)) && (!filtro || (filtro === 'activo') === f.activo),
+    );
+  });
   guardandoId = signal<string | null>(null);
 
-  // el formulario de alta queda oculto hasta que se toca "Nuevo combo"
+  // el formulario queda oculto hasta que se toca "Nuevo combo" o "Editar"
   mostrarFormulario = signal(false);
+  // null = creando un combo nuevo; con id = editando ese combo
+  editandoId = signal<string | null>(null);
+  // foto que ya tiene el combo que se está editando
+  imagenActual = signal<string | null>(null);
 
   productos = signal<Producto[]>([]);
   cantidades = signal<Map<string, number>>(new Map());
@@ -32,8 +50,9 @@ export class CrearComboComponent implements OnInit {
   exito = signal<string | null>(null);
 
   comboForm = new FormGroup({
-    nombre: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
-    precio: new FormControl(0, { nonNullable: true, validators: [Validators.required, Validators.min(0)] }),
+    nombre: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.pattern(/\S/)] }),
+    // precio en pesos enteros y mayor a $0
+    precio: new FormControl(0, { nonNullable: true, validators: [Validators.required, Validators.min(1), Validators.pattern(/^\d+$/)] }),
     entradasIncluidas: new FormControl(1, {
       nonNullable: true,
       validators: [Validators.required, Validators.min(0)],
@@ -95,11 +114,30 @@ export class CrearComboComponent implements OnInit {
   onNuevoCombo() {
     this.limpiarFormulario();
     this.exito.set(null);
+    this.editandoId.set(null);
     this.mostrarFormulario.set(true);
+  }
+
+  // abre el mismo formulario del alta con los datos y productos del combo
+  onEditar(combo: Combo) {
+    this.limpiarFormulario();
+    this.exito.set(null);
+    this.comboForm.setValue({
+      nombre: combo.nombre,
+      precio: combo.precio,
+      entradasIncluidas: combo.entradasIncluidas,
+    });
+    this.cantidades.set(new Map(combo.productos.map((p) => [p.productoId, p.cantidad])));
+    this.imagenActual.set(combo.imagenUrl);
+    this.editandoId.set(combo.id);
+    this.mostrarFormulario.set(true);
+    // el formulario está arriba del listado: lo llevo a la vista
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   onCancelar() {
     this.limpiarFormulario();
+    this.editandoId.set(null);
     this.mostrarFormulario.set(false);
   }
 
@@ -129,11 +167,11 @@ export class CrearComboComponent implements OnInit {
       cantidad,
     }));
 
-    const { error } = await this.candyBarService.crearCombo({
-      ...this.comboForm.getRawValue(),
-      imagenUrl,
-      productos,
-    });
+    const datos = { ...this.comboForm.getRawValue(), imagenUrl, productos };
+    const id = this.editandoId();
+    const { error } = id
+      ? await this.candyBarService.actualizarCombo(id, datos)
+      : await this.candyBarService.crearCombo(datos);
     this.guardando.set(false);
 
     if (error) {
@@ -141,8 +179,9 @@ export class CrearComboComponent implements OnInit {
       return;
     }
 
-    this.exito.set('Combo creado.');
+    this.exito.set(id ? 'Combo actualizado.' : 'Combo creado.');
     this.limpiarFormulario();
+    this.editandoId.set(null);
     this.mostrarFormulario.set(false);
     await this.recargar();
   }
@@ -152,6 +191,7 @@ export class CrearComboComponent implements OnInit {
     this.cantidades.set(new Map());
     this.archivoImagen.set(null);
     this.previewUrl.set(null);
+    this.imagenActual.set(null);
     this.errorMsg.set(null);
     if (this.inputImagen) this.inputImagen.nativeElement.value = '';
   }

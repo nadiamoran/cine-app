@@ -29,7 +29,7 @@ export class CandyBarService {
   async getCombosActivos(): Promise<Combo[]> {
     const { data, error } = await this.supabase
       .from('combos')
-      .select('*, combo_productos(cantidad, productos(nombre))')
+      .select('*, combo_productos(cantidad, producto_id, productos(nombre))')
       .eq('activo', true)
       .order('nombre');
     if (error || !data) return [];
@@ -47,7 +47,7 @@ export class CandyBarService {
   async getCombos(): Promise<Combo[]> {
     const { data, error } = await this.supabase
       .from('combos')
-      .select('*, combo_productos(cantidad, productos(nombre))')
+      .select('*, combo_productos(cantidad, producto_id, productos(nombre))')
       .order('nombre');
     if (error || !data) return [];
     return data.map(this.mapCombo);
@@ -62,6 +62,7 @@ export class CandyBarService {
       entradasIncluidas: row.entradas_incluidas ?? 0,
       imagenUrl: row.imagen_url ?? null,
       productos: (row.combo_productos ?? []).map((cp: any) => ({
+        productoId: cp.producto_id,
         nombre: cp.productos?.nombre ?? '',
         cantidad: cp.cantidad,
       })),
@@ -180,6 +181,41 @@ export class CandyBarService {
       cantidad: p.cantidad,
     }));
 
+    const { error: errorItems } = await this.supabase.from('combo_productos').insert(filas);
+    return { error: errorItems?.message ?? null };
+  }
+
+  // Edita un combo: sus datos y la lista de productos que incluye (se borra
+  // la lista vieja y se carga la nueva). La foto solo se cambia si se eligió
+  // otra. Las compras viejas no cambian: guardan nombre y precio del momento.
+  async actualizarCombo(
+    id: string,
+    datos: {
+      nombre: string;
+      precio: number;
+      entradasIncluidas: number;
+      imagenUrl: string | null;
+      productos: { productoId: string; cantidad: number }[];
+    },
+  ): Promise<{ error: string | null }> {
+    const cambios: Record<string, unknown> = {
+      nombre: datos.nombre,
+      precio: datos.precio,
+      entradas_incluidas: datos.entradasIncluidas,
+    };
+    if (datos.imagenUrl) cambios['imagen_url'] = datos.imagenUrl;
+
+    const { error } = await this.supabase.from('combos').update(cambios).eq('id', id);
+    if (error) return { error: error.message };
+
+    const { error: errorBorrar } = await this.supabase.from('combo_productos').delete().eq('combo_id', id);
+    if (errorBorrar) return { error: errorBorrar.message };
+
+    const filas = datos.productos.map((p) => ({
+      combo_id: id,
+      producto_id: p.productoId,
+      cantidad: p.cantidad,
+    }));
     const { error: errorItems } = await this.supabase.from('combo_productos').insert(filas);
     return { error: errorItems?.message ?? null };
   }

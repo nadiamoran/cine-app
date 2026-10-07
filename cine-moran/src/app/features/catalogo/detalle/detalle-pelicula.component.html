@@ -89,7 +89,10 @@
 
         <label>
           Comentario (opcional)
-          <textarea formControlName="comentario"></textarea>
+          <textarea formControlName="comentario" maxlength="300"></textarea>
+          <small [class.error]="resenaForm.controls.comentario.value.length >= 300">
+            {{ resenaForm.controls.comentario.value.length }} / 300
+          </small>
         </label>
 
         @if (errorResena()) {

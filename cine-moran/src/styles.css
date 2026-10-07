@@ -50,7 +50,10 @@ h2 { font-size: 1.6rem; margin-top: 2.5rem; border-bottom: 1px solid var(--borde
    Este selector le da un contenedor consistente a cualquier página. */
 router-outlet + * {
   display: block;
-  max-width: 1100px;
+  /* width: 100% porque app-root es una columna flex (para que el pie quede
+     abajo): con margin auto, sin esto la página se achica a su contenido */
+  width: 100%;
+  max-width: 1320px;
   margin: 0 auto;
   padding: 2rem 1.5rem 4rem;
 }
@@ -115,6 +118,9 @@ app-admin-layout {
 .admin-menu {
   position: sticky;
   top: 5.5rem;
+  /* ocupa el alto de la pantalla (menos la barra de arriba), así llega hasta
+     abajo y no queda cortado a la mitad */
+  min-height: calc(100vh - 7.5rem);
   display: flex;
   flex-direction: column;
   gap: 0.15rem;
@@ -163,6 +169,7 @@ app-admin-layout {
 
   .admin-menu {
     position: static;
+    min-height: 0;
     flex-direction: row;
     flex-wrap: wrap;
     gap: 0.35rem;
@@ -171,6 +178,71 @@ app-admin-layout {
   .admin-menu-grupo {
     display: none;
   }
+}
+
+/* la app ocupa al menos toda la pantalla, así el pie queda abajo de todo
+   aunque la página tenga poco contenido */
+app-root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+app-footer {
+  margin-top: auto;
+}
+
+/* ---------- pie de página ---------- */
+
+.pie {
+  margin-top: 3rem;
+  padding: 2.5rem 0 1.5rem;   /* el margen lateral lo ponen las columnas */
+  background: var(--bg-elevated);
+  border-top: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.pie-columnas {
+  /* space-between: la primera columna arranca donde arranca el contenido de
+     la página y la última termina en el borde derecho, con el mismo espacio
+     entre todas (antes cada columna ocupaba lo mismo y el bloque quedaba
+     cargado a la izquierda) */
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 2rem 3rem;
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 0 1.5rem;      /* mismo margen interno que el contenido de la página */
+}
+
+.pie-columnas > div:first-child {
+  max-width: 260px;
+}
+
+.pie h4 {
+  margin: 0 0 0.6rem;
+  font-family: var(--fuente-marquesina);
+  font-size: 1.1rem;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  color: var(--dorado);
+}
+
+.pie p {
+  margin: 0.4rem 0 0;
+  line-height: 1.6;
+}
+
+.pie-copyright {
+  width: calc(100% - 3rem);   /* mismo margen lateral que las columnas */
+  max-width: calc(1320px - 3rem);
+  margin: 2rem auto 0 !important;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border);
+  text-align: center;
+  font-size: 0.8rem;
 }
 
 /* ---------- navegación ---------- */
@@ -199,6 +271,14 @@ nav {
 
 .marca span {
   color: var(--dorado);
+}
+
+/* logo de la barra: 36px de alto (la imagen mide el doble, para que se vea
+   nítida en pantallas de alta densidad) */
+.logo-nav {
+  display: block;
+  height: 36px;
+  width: auto;
 }
 
 .nav-links {
@@ -477,7 +557,7 @@ button:disabled {
 
 .grid-peliculas {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   align-items: stretch;
   gap: 1.5rem;
 }
@@ -1079,7 +1159,10 @@ button:disabled {
   margin-bottom: 0.75rem;
 }
 
-.cupon-item > div:first-child {
+/* el texto de la fila (nombre, precio, estado) ocupa todo el espacio libre
+   y empuja los controles a la derecha. first-of-type y no first-child:
+   en productos y combos el primer elemento de la fila es la foto */
+.cupon-item > div:first-of-type {
   flex: 1;
 }
 
@@ -1128,8 +1211,15 @@ button:disabled {
 /* ---------- admin de películas ---------- */
 
 .cupon-item .estado-pelicula {
-  width: 170px;
+  width: auto;           /* le gana a ".cupon-item label" (100px, de cupones) */
+  flex-direction: row;   /* "Estado" al costado del desplegable, no arriba */
+  align-items: center;
+  gap: 0.6rem;
   flex-shrink: 0;
+}
+
+.cupon-item .estado-pelicula select {
+  width: 160px;
 }
 
 .estado-pelicula select {
@@ -1220,9 +1310,17 @@ button:disabled {
   flex-shrink: 0;
 }
 
-.btn-eliminar:hover:not(:disabled) {
+/* acciones peligrosas ("Eliminar", "Cancelar compra"): rojas siempre, para
+   distinguirlas antes de tocarlas; al pasar el mouse se rellenan */
+.btn-secundario.btn-eliminar {
   border-color: var(--rojo);
-  color: var(--rojo);
+  color: #ff8a80;
+}
+
+.btn-secundario.btn-eliminar:hover:not(:disabled) {
+  background: var(--rojo);
+  border-color: var(--rojo);
+  color: #fff;
 }
 
 .estado-habilitada { background: var(--verde); }
@@ -1380,10 +1478,347 @@ button:disabled {
   color: var(--text-muted);
 }
 
+/* ---------- listado de admin en forma de tabla (Películas) ---------- */
+
+.subtitulo-admin {
+  margin: 0.35rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+/* buscador con lupa adentro del campo */
+.buscador {
+  position: relative;
+  flex: 1;
+}
+
+.buscador input {
+  width: 100%;
+  padding-left: 2.4rem;
+}
+
+.buscador-icono {
+  position: absolute;
+  left: 0.8rem;
+  top: 50%;
+  width: 1rem;
+  height: 1rem;
+  transform: translateY(-50%);
+  fill: none;
+  stroke: var(--text-muted);
+  stroke-width: 2;
+  stroke-linecap: round;
+  pointer-events: none;
+}
+
+/* columnas: película (todo lo que sobra) · preventa · estado · acción */
+.tabla-admin-encabezado,
+.tabla-admin-fila {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 160px 180px 110px;
+  align-items: center;
+  gap: 1rem;
+}
+
+.tabla-admin-encabezado {
+  padding: 0 1.25rem 0.6rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.tabla-admin-encabezado span:last-child {
+  text-align: right;
+}
+
+.tabla-admin-fila {
+  margin-bottom: 0.75rem;
+  padding: 0.9rem 1.25rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  transition: border-color 0.15s ease;
+}
+
+.tabla-admin-fila:hover {
+  border-color: rgba(217, 164, 65, 0.45);
+}
+
+.fila-principal {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.fila-poster {
+  width: 52px;
+  height: 74px;
+  flex-shrink: 0;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+}
+
+.fila-poster-vacio {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  background: var(--bg);
+}
+
+.fila-datos {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+.fila-datos strong {
+  font-size: 1rem;
+  color: var(--text);
+}
+
+.fila-datos b {
+  color: var(--text);
+}
+
+.fila-accion {
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* columna "Preventa": píldora con color según el estado */
+.badge-preventa {
+  display: inline-block;
+  padding: 0.25rem 0.65rem;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.preventa-abierta {
+  color: var(--verde);
+  border-color: rgba(63, 166, 106, 0.5);
+  background: rgba(63, 166, 106, 0.12);
+}
+
+.preventa-por_abrir {
+  color: var(--dorado);
+  border-color: rgba(217, 164, 65, 0.5);
+  background: rgba(217, 164, 65, 0.1);
+}
+
+/* columna "Estado": desplegable con un punto de color adelante */
+.select-estado {
+  position: relative;
+  display: inline-block;
+  width: 100%;
+}
+
+.select-estado::before {
+  content: '';
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  z-index: 1;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  transform: translateY(-50%);
+  background: var(--text-muted);
+  pointer-events: none;
+}
+
+.select-estado.estado-en_cartelera::before { background: var(--verde); }
+.select-estado.estado-proximamente::before { background: var(--dorado); }
+.select-estado.estado-baja::before { background: var(--rojo); }
+.select-estado.estado-activo::before { background: var(--verde); }
+.select-estado.estado-inactivo::before { background: var(--rojo); }
+
+/* foto cuadrada (productos y combos), en vez del póster vertical */
+.fila-miniatura {
+  width: 64px;
+  height: 64px;
+  flex-shrink: 0;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+/* columna "Precio" */
+.fila-precio {
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--text);
+}
+
+.select-estado select {
+  width: 100%;
+  padding-left: 1.7rem;
+  font-size: 0.85rem;
+}
+
+/* botón "Editar" con ícono de lápiz */
+.btn-editar {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.btn-editar svg {
+  width: 0.9rem;
+  height: 0.9rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+
+/* ---------- reportes (RF-52 a RF-54) ---------- */
+
+.bloque-reporte {
+  margin-bottom: 2.5rem;
+}
+
+.bloque-reporte-encabezado {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.bloque-reporte-encabezado h2 {
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.tabla-reporte {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  font-size: 0.9rem;
+}
+
+.tabla-reporte th,
+.tabla-reporte td {
+  padding: 0.6rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+.tabla-reporte th {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* los números alineados a la derecha, como en una planilla */
+.tabla-reporte th:not(:first-child),
+.tabla-reporte td:not(:first-child) {
+  text-align: right;
+}
+
+/* días sin ventas, más apagados */
+.fila-sin-ventas td {
+  color: var(--text-muted);
+}
+
+.tabla-reporte tfoot td {
+  font-weight: 700;
+  color: var(--dorado);
+  border-bottom: none;
+}
+
+.grilla-graficos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1.5rem;
+}
+
+.grafico {
+  padding: 1.25rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.grafico h3 {
+  margin: 0;
+}
+
+/* gráfico de barras hecho con HTML y CSS: el ancho de cada barra es el %
+   respecto del primero del ranking */
+.barra-fila {
+  display: grid;
+  grid-template-columns: minmax(0, 9rem) 1fr 2.5rem;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.7rem;
+  font-size: 0.85rem;
+}
+
+.barra-nombre {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.barra-fondo {
+  height: 0.9rem;
+  background: var(--bg);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.barra {
+  height: 100%;
+  background: linear-gradient(90deg, var(--dorado-hover), var(--dorado));
+  border-radius: 999px;
+  transition: width 0.4s ease;
+}
+
+.barra-producto {
+  background: linear-gradient(90deg, #2f8a55, var(--verde));
+}
+
+.barra-valor {
+  text-align: right;
+  font-weight: 700;
+}
+
 /* ---------- celular (RNF-10) ----------
    Ajustes para pantallas de hasta 760px de ancho. El menú (☰), el menú
    lateral de admin y el mapa de butacas tienen sus propios ajustes arriba. */
 @media (max-width: 760px) {
+  /* pie de página: una columna debajo de la otra */
+  .pie-columnas {
+    flex-direction: column;
+    padding: 0 1rem;
+  }
+
+  .pie-copyright {
+    width: calc(100% - 2rem);
+  }
+
   /* menos margen a los costados: en un celular cada píxel cuenta */
   router-outlet + * {
     padding: 1.25rem 1rem 3rem;
@@ -1397,6 +1832,28 @@ button:disabled {
   .grid-peliculas {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.9rem;
+  }
+
+  /* listado en tabla de admin: cada película como tarjeta, sin encabezados */
+  .tabla-admin-encabezado {
+    display: none;
+  }
+
+  .tabla-admin-fila {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .fila-principal {
+    grid-column: 1 / -1;
+  }
+
+  .fila-accion {
+    grid-column: 1 / -1;
+  }
+
+  .fila-accion .btn-editar {
+    width: 100%;
+    justify-content: center;
   }
 
   /* buscador y filtro de género, uno debajo del otro */
@@ -1427,7 +1884,7 @@ button:disabled {
     gap: 0.75rem;
   }
 
-  .cupon-item > div:first-child {
+  .cupon-item > div:first-of-type {
     flex-basis: 100%;
   }
 

@@ -1,4 +1,5 @@
-import { Component, ElementRef, OnInit, ViewChild, signal } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild, computed, signal } from '@angular/core';
+import { DecimalPipe } from '@angular/common';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CandyBarService } from '../../candy-bar/candy-bar.service';
 import { Categoria, Producto } from '../../candy-bar/producto.model';
@@ -6,7 +7,7 @@ import { Categoria, Producto } from '../../candy-bar/producto.model';
 @Component({
   selector: 'app-crear-producto',
   standalone: true,
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, DecimalPipe],
   templateUrl: './crear-producto.component.html',
 })
 export class CrearProductoComponent implements OnInit {
@@ -17,6 +18,19 @@ export class CrearProductoComponent implements OnInit {
   // productos ya cargados, para poder editarlos o darlos de baja
   cargando = signal(true);
   productos = signal<Producto[]>([]);
+
+  // buscador y filtro del listado (mismo mecanismo que en Películas)
+  busqueda = signal('');
+  filtro = signal('');
+
+  // se recalcula solo cuando cambian la lista, la búsqueda o el filtro
+  productosFiltrados = computed(() => {
+    const texto = this.busqueda().trim().toLowerCase();
+    const filtro = this.filtro();
+    return this.productos().filter(
+      (f) => (!texto || (f.nombre).toLowerCase().includes(texto)) && (!filtro || f.categoriaId === filtro),
+    );
+  });
   guardandoId = signal<string | null>(null);
 
   // el formulario queda oculto hasta que se toca "Nuevo producto" o "Editar"
@@ -35,8 +49,9 @@ export class CrearProductoComponent implements OnInit {
 
   productoForm = new FormGroup({
     categoriaId: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
-    nombre: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
-    precio: new FormControl(0, { nonNullable: true, validators: [Validators.required, Validators.min(0)] }),
+    nombre: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.pattern(/\S/)] }),
+    // precio en pesos enteros y mayor a $0
+    precio: new FormControl(0, { nonNullable: true, validators: [Validators.required, Validators.min(1), Validators.pattern(/^\d+$/)] }),
   });
 
   // por si la categoría todavía no existe
@@ -107,6 +122,8 @@ export class CrearProductoComponent implements OnInit {
     this.imagenActual.set(producto.imagenUrl);
     this.editandoId.set(producto.id);
     this.mostrarFormulario.set(true);
+    // el formulario está arriba del listado: lo llevo a la vista
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   onCancelar() {
