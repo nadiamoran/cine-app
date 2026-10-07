@@ -5,7 +5,7 @@ import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { PeliculasService } from '../../catalogo/peliculas.service';
 import { Pelicula } from '../../catalogo/pelicula.model';
 import { FuncionesService } from '../../funciones/funciones.service';
-import { Formato, Funcion, Idioma } from '../../funciones/funcion.model';
+import { Formato, Funcion, Idioma, PrecioEntrada } from '../../funciones/funcion.model';
 
 @Component({
   selector: 'app-crear-funcion',
@@ -18,6 +18,10 @@ export class CrearFuncionComponent implements OnInit {
   guardando = signal(false);
   errorMsg = signal<string | null>(null);
   exito = signal<string | null>(null);
+
+  // RF-15: el precio no se carga acá, sale de la tabla de precios por
+  // formato (pantalla Salas). Se trae solo para mostrarlo como dato.
+  precios = signal<PrecioEntrada[]>([]);
 
   // funciones actuales, para poder editarlas o eliminarlas
   cargando = signal(true);
@@ -35,7 +39,6 @@ export class CrearFuncionComponent implements OnInit {
     hora: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
     formato: new FormControl<Formato>('2d', { nonNullable: true }),
     idioma: new FormControl<Idioma>('castellano', { nonNullable: true }),
-    precio: new FormControl(0, { nonNullable: true, validators: [Validators.required, Validators.min(0)] }),
   });
 
   // ---- programación recurrente: patrón de días + horarios + período ----
@@ -60,7 +63,6 @@ export class CrearFuncionComponent implements OnInit {
     hasta: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
     formato: new FormControl<Formato>('2d', { nonNullable: true }),
     idioma: new FormControl<Idioma>('castellano', { nonNullable: true }),
-    precio: new FormControl(0, { nonNullable: true, validators: [Validators.required, Validators.min(0)] }),
   });
 
   // lo que devuelve la vista previa: cada función con su sala (o null si no hay lugar)
@@ -79,7 +81,12 @@ export class CrearFuncionComponent implements OnInit {
   }
 
   async ngOnInit() {
-    this.peliculas.set(await this.peliculasService.getTodas());
+    const [peliculas, precios] = await Promise.all([
+      this.peliculasService.getTodas(),
+      this.funcionesService.getPrecios(),
+    ]);
+    this.peliculas.set(peliculas);
+    this.precios.set(precios);
     await this.recargar();
   }
 
@@ -87,6 +94,10 @@ export class CrearFuncionComponent implements OnInit {
     this.cargando.set(true);
     this.funciones.set(await this.funcionesService.getProximas());
     this.cargando.set(false);
+  }
+
+  precioDe(formato: Formato): PrecioEntrada | undefined {
+    return this.precios().find((p) => p.formato === formato);
   }
 
   onNuevaFuncion() {
@@ -163,7 +174,6 @@ export class CrearFuncionComponent implements OnInit {
       hasta: valores.hasta,
       formato: valores.formato,
       idioma: valores.idioma,
-      precio: valores.precio,
     };
   }
 
@@ -249,7 +259,6 @@ export class CrearFuncionComponent implements OnInit {
       hora: this.horaLocal(inicio),
       formato: funcion.formato,
       idioma: funcion.idioma,
-      precio: funcion.precio,
     });
     this.editandoId.set(funcion.id);
     this.mostrarFormulario.set(true);
@@ -302,7 +311,6 @@ export class CrearFuncionComponent implements OnInit {
       inicio,
       formato: valores.formato,
       idioma: valores.idioma,
-      precio: valores.precio,
     };
 
     const id = this.editandoId();

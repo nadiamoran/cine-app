@@ -18,13 +18,27 @@
           <p>Estreno: a confirmar</p>
         }
 
-        @if (authService.currentUser()) {
-          <button (click)="toggleAlerta(pelicula.id)">
-            {{ tieneAlerta(pelicula.id) ? 'Cancelar alerta' : 'Avisame' }}
-          </button>
-        } @else {
-          <a routerLink="/login">Iniciá sesión para que te avisen</a>
+        @if (infoPreventa(pelicula); as pv) {
+          @if (pv.estado === 'abierta') {
+            <p class="texto-preventa">Preventa hasta el {{ pv.ultimoDia | date: 'dd/MM' }}</p>
+          } @else if (pv.estado === 'por_abrir') {
+            <p class="texto-preventa">Preventa desde el {{ pv.apertura | date: 'dd/MM' }}</p>
+          }
         }
+
+        <!-- botones al pie de la tarjeta, con el mismo ancho -->
+        <div class="card-acciones">
+          @if (infoPreventa(pelicula).estado === 'abierta') {
+            <!-- la venta ya abrió: no hace falta "Avisame", se puede comprar -->
+            <a class="btn-primario" [routerLink]="['/pelicula', pelicula.id]">Comprar en preventa</a>
+          } @else if (authService.currentUser()) {
+            <button (click)="toggleAlerta(pelicula.id)">
+              {{ tieneAlerta(pelicula.id) ? 'Cancelar alerta' : 'Avisame' }}
+            </button>
+          } @else {
+            <a class="btn-secundario" routerLink="/login">Iniciá sesión para que te avisen</a>
+          }
+        </div>
       </article>
     }
   </div>

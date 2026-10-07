@@ -10,6 +10,20 @@
     @if (compraConfirmada()!.cuponAplicado; as cupon) {
       <p class="detalle-seleccion">Cupón aplicado: {{ cupon.nombre }} (-{{ cupon.porcentaje }}%)</p>
     }
+    @if (compraConfirmada()!.orden.creditoUsado > 0) {
+      <p class="detalle-seleccion">Pagado con crédito: ${{ compraConfirmada()!.orden.creditoUsado }}</p>
+    }
+    @if (etiquetaMetodo(compraConfirmada()!.orden.metodoPago); as metodo) {
+      <p class="detalle-seleccion">
+        {{ metodo }}: ${{ compraConfirmada()!.orden.total - compraConfirmada()!.orden.creditoUsado }}
+      </p>
+    }
+    @if (compraConfirmada()!.puntosUsados > 0) {
+      <p class="detalle-seleccion">Canjeaste {{ compraConfirmada()!.puntosUsados }} puntos.</p>
+    }
+    @if (compraConfirmada()!.puntosGanados > 0) {
+      <p class="detalle-seleccion">Ganaste {{ compraConfirmada()!.puntosGanados }} puntos.</p>
+    }
     <p>Butacas: {{ compraConfirmada()!.butacas.map(b => b.fila + b.numero).join(', ') }}</p>
     @if (compraConfirmada()!.productos.length > 0) {
       <p class="detalle-seleccion">
@@ -17,16 +31,15 @@
         (retirá con el mismo QR de la entrada)
       </p>
     }
-    <p>Confirmación enviada (simulado) a {{ compraConfirmada()!.orden.email }}.</p>
 
     <button [disabled]="generandoPdf()" (click)="onDescargarPdf()">
       {{ generandoPdf() ? 'Generando PDF...' : 'Descargar entradas (PDF)' }}
     </button>
 
-    <p><a routerLink="/">Volver a la cartelera</a></p>
+    <p><a class="link-volver" routerLink="/"><span aria-hidden="true">←</span> Volver a la cartelera</a></p>
   </section>
 } @else {
-  <a [routerLink]="['/pelicula', funcion()!.peliculaId]">← Volver a la película</a>
+  <a class="link-volver" [routerLink]="['/pelicula', funcion()!.peliculaId]"><span aria-hidden="true">←</span> Volver a la película</a>
 
   <h1>{{ pelicula()?.nombre }}</h1>
   <p>
@@ -42,7 +55,20 @@
       cumpla la edad mínima para poder comprar.
       <a routerLink="/login">Ingresar</a>
     </p>
+  } @else if (preventa()?.estado === 'por_abrir') {
+    <!-- RF-29: la base también rechaza la compra antes de que abra la preventa -->
+    <p class="aviso-preventa">
+      La venta de esta película abre el {{ preventa()!.apertura | date: 'dd/MM' }} (preventa con
+      ${{ preventa()!.descuento }} menos).
+    </p>
   } @else {
+    @if (preventa()?.estado === 'abierta') {
+      <p class="aviso-preventa">
+        Precio de preventa: ${{ preventa()!.descuento }} menos en cada entrada, comprando hasta el
+        {{ preventa()!.ultimoDia | date: 'dd/MM' }}.
+      </p>
+    }
+
     <div class="pantalla">PANTALLA</div>
 
     <div class="mapa-butacas">
@@ -70,9 +96,9 @@
     </div>
 
     <div class="referencias">
-      <span class="butaca butaca-estandar"></span> Estándar
-      <span class="butaca butaca-vip"></span> VIP
-      <span class="butaca butaca-accesible"></span> Accesible
+      <span class="butaca butaca-estandar"></span> Estándar ${{ precioEstandar() }}
+      <span class="butaca butaca-vip"></span> VIP ${{ precioVip() }}
+      <span class="butaca butaca-accesible"></span> Accesible ${{ precioEstandar() }}
       <span class="butaca butaca-seleccionada"></span> Seleccionada
       <span class="butaca butaca-ocupada"></span> Ocupada
     </div>
@@ -141,10 +167,57 @@
       }
     }
 
+    <!-- RF-41: canje de puntos, dentro de la misma compra (mismo QR) -->
+    @if (recompensasAplicables().length > 0) {
+      <h2>Canjear puntos</h2>
+      <p class="detalle-seleccion">
+        Tenés {{ puntosDisponibles() }} puntos. Las entradas canjeadas son generales (no VIP); los
+        productos se retiran en el candy bar con el mismo QR.
+      </p>
+      <div class="grilla-candy">
+        @for (recompensa of recompensasAplicables(); track recompensa.id) {
+          <div class="item-candy">
+            <div class="item-candy-info">
+              <span class="item-candy-nombre">{{ recompensa.nombre }}</span>
+            </div>
+            <div class="item-candy-pie">
+              <span class="item-candy-precio">{{ recompensa.puntos }} pts</span>
+              <input
+                type="number"
+                min="0"
+                [value]="cantidadRecompensa(recompensa.id)"
+                (change)="onCambiarCantidadRecompensa(recompensa.id, $any($event.target).value)"
+              />
+            </div>
+          </div>
+        }
+      </div>
+    }
+
     <div class="resumen-compra">
       <p>{{ cantidadSeleccionada() }} butaca(s) seleccionada(s) · Total: ${{ total() }}</p>
+      @if (puntosAUsar() > 0) {
+        <p class="detalle-seleccion" [class.error]="faltanPuntos()">
+          Canje: {{ puntosAUsar() }} de tus {{ puntosDisponibles() }} puntos
+          @if (entradasCanjeadas() > 0) {
+            · {{ entradasCanjeadas() }} entrada(s) gratis
+          }
+          @if (faltanPuntos()) {
+            · no te alcanzan
+          }
+        </p>
+      }
       @if (cantidadSeleccionada() > 0) {
         <p class="detalle-seleccion">Butacas: {{ etiquetaSeleccion() }}</p>
+        <p class="detalle-seleccion">
+          @if (generalesACobrar() > 0) {
+            {{ generalesACobrar() }} estándar × ${{ precioEstandar() }}
+          }
+          @if (generalesACobrar() > 0 && butacasVipSeleccionadas() > 0) { + }
+          @if (butacasVipSeleccionadas() > 0) {
+            {{ butacasVipSeleccionadas() }} VIP × ${{ precioVip() }}
+          }
+        </p>
       }
       @if (entradasEnCombos() > 0 && !faltanButacasParaCombos()) {
         <p class="detalle-seleccion">
@@ -153,9 +226,43 @@
       }
       @if (faltanButacasParaCombos()) {
         <p class="error">
-          Los combos elegidos incluyen {{ entradasEnCombos() }} entrada(s) general(es) y elegiste
-          {{ butacasGeneralesSeleccionadas() }} butaca(s) general(es). Las butacas VIP no entran en el combo.
+          Los combos y canjes elegidos incluyen {{ entradasEnCombos() + entradasCanjeadas() }} entrada(s)
+          general(es) y elegiste {{ butacasGeneralesSeleccionadas() }} butaca(s) general(es). Las butacas
+          VIP no entran en combos ni canjes.
         </p>
+      }
+
+      <!-- RF-28 / RF-46: el crédito se usa junto con otro medio de pago -->
+      @if (creditoDisponible() > 0) {
+        <label class="check-preventa">
+          <input type="checkbox" [checked]="usarCredito()" (change)="usarCredito.set($any($event.target).checked)" />
+          Usar mi crédito (${{ creditoDisponible() }} disponible)
+        </label>
+        @if (usarCredito() && creditoAAplicar() > 0) {
+          <p class="detalle-seleccion">
+            Crédito: -${{ creditoAAplicar() }} · A pagar: ${{ aPagar() }}
+          </p>
+        }
+      }
+
+      <!-- S-2: pago simulado, no se piden datos de tarjeta -->
+      @if (aPagar() > 0) {
+        <fieldset class="bloque-preventa">
+          <legend>Medio de pago</legend>
+          @for (metodo of metodosPago; track metodo.valor) {
+            <label class="check-preventa">
+              <input
+                type="radio"
+                name="metodo-pago"
+                [checked]="metodoPago() === metodo.valor"
+                (change)="metodoPago.set(metodo.valor)"
+              />
+              {{ metodo.etiqueta }}
+            </label>
+          }
+        </fieldset>
+      } @else if (cantidadSeleccionada() > 0) {
+        <p class="detalle-seleccion">Tu crédito cubre toda la compra.</p>
       }
 
       @if (!authService.currentUser()) {
@@ -174,7 +281,15 @@
         <p class="error">{{ errorMsg() }}</p>
       }
 
-      <button [disabled]="cantidadSeleccionada() === 0 || faltanButacasParaCombos() || comprando()" (click)="onConfirmar()">
+      <!-- RF-15: antes de pagar tiene que quedar claro que compra VIP -->
+      @if (butacasVipSeleccionadas() > 0) {
+        <p class="aviso-vip">
+          Estás comprando {{ butacasVipSeleccionadas() }} butaca(s) VIP (filas R, S y T) a
+          ${{ precioVip() }} cada una.
+        </p>
+      }
+
+      <button [disabled]="cantidadSeleccionada() === 0 || faltanButacasParaCombos() || faltanPuntos() || comprando()" (click)="onConfirmar()">
         {{ comprando() ? 'Procesando...' : 'Confirmar compra' }}
       </button>
     </div>

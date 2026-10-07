@@ -51,7 +51,7 @@ export class TicketsService {
         }`,
       );
       linea(`Butaca: ${butaca.fila}${butaca.numero} (${butaca.tipo})`);
-      linea(`Precio: $${funcion.precio}`);
+      linea(butaca.canjeada ? 'Precio: canje de puntos' : `Precio: $${butaca.precio}`);
 
       if (resultado.productos.length > 0) {
         const detalleCandy = resultado.productos.map((p) => `${p.cantidad}x ${p.nombre}`).join(', ');

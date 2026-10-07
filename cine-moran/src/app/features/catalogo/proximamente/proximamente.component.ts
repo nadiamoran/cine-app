@@ -5,6 +5,7 @@ import { PeliculasService } from '../peliculas.service';
 import { AlertasService } from './alertas.service';
 import { AuthService } from '../../../core/auth/auth.service';
 import { Pelicula } from '../pelicula.model';
+import { infoPreventa } from '../preventa.utils';
 
 @Component({
   selector: 'app-proximamente',
@@ -16,6 +17,9 @@ export class ProximamenteComponent implements OnInit {
   peliculas = signal<Pelicula[]>([]);
   alertasActivas = signal<Set<string>>(new Set());
   cargando = signal(true);
+
+  // RF-29: para la etiqueta de preventa de cada película
+  readonly infoPreventa = infoPreventa;
 
   constructor(
     private peliculasService: PeliculasService,

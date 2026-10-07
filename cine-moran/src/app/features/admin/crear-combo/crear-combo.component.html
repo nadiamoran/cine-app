@@ -1,8 +1,12 @@
-<h1>Combos</h1>
+<!-- título a la izquierda y el botón "Nuevo" a la derecha -->
+<div class="encabezado-admin">
+  <h1>Combos</h1>
+  @if (!mostrarFormulario()) {
+    <button type="button" (click)="onNuevoCombo()">+ Nuevo combo</button>
+  }
+</div>
 
-@if (!mostrarFormulario()) {
-  <button type="button" class="btn-nueva-pelicula" (click)="onNuevoCombo()">+ Nuevo combo</button>
-} @else {
+@if (mostrarFormulario()) {
 <h2>Agregar combo</h2>
 
 <form novalidate [formGroup]="comboForm" (ngSubmit)="onSubmit()">

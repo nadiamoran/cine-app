@@ -39,6 +39,19 @@ export class CatalogoComponent implements OnInit {
     });
   });
 
+  // RF-04: puesto (1, 2 o 3) de las más vendidas. Se calcula sobre toda la
+  // cartelera y no sobre lo filtrado, así la leyenda no cambia al buscar.
+  // getCartelera ya las trae ordenadas por ventas; las que no vendieron
+  // ninguna entrada no llevan leyenda.
+  puestosVentas = computed(() => {
+    const puestos = new Map<string, number>();
+    this.peliculas()
+      .filter((p) => p.ventas > 0)
+      .slice(0, 3)
+      .forEach((p, i) => puestos.set(p.id, i + 1));
+    return puestos;
+  });
+
   constructor(
     private peliculasService: PeliculasService,
     private route: ActivatedRoute,

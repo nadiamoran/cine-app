@@ -19,7 +19,9 @@ export class PanelAdminComponent {
     { ruta: '/admin/crear-producto', titulo: 'Productos', detalle: 'Candy bar, categorías y fotos' },
     { ruta: '/admin/crear-combo', titulo: 'Combos', detalle: 'Entrada + candy a precio fijo' },
     { ruta: '/admin/cupones', titulo: 'Cupones', detalle: 'Descuentos y porcentajes' },
-    { ruta: '/empleado/validar', titulo: 'Validar entrada', detalle: 'QR o código manual' },
+    { ruta: '/admin/recompensas', titulo: 'Recompensas', detalle: 'Canje de puntos' },
+    { ruta: '/admin/actividad', titulo: 'Actividad', detalle: 'Funciones, precios y validaciones' },
+    { ruta: '/admin/validar', titulo: 'Validar entrada', detalle: 'QR o código manual' },
   ];
 
   constructor(protected authService: AuthService) {}

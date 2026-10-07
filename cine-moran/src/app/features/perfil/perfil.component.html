@@ -11,9 +11,25 @@
       <span class="valor">{{ usuario.puntos }}</span>
       <span class="etiqueta">Puntos acumulados</span>
     </div>
+    <div class="tarjeta-metrica">
+      <span class="valor">${{ usuario.credito }}</span>
+      <span class="etiqueta">Crédito disponible</span>
+    </div>
   </div>
 
   <h2>Historial de compras</h2>
+
+  <p class="detalle-seleccion">
+    Podés cancelar una compra hasta 2 horas antes de la función, si todavía no usaste las entradas
+    ni retiraste el candy bar. No se devuelve dinero: el total queda como crédito para tus próximas compras.
+  </p>
+
+  @if (errorCancelacion()) {
+    <p class="error">{{ errorCancelacion() }}</p>
+  }
+  @if (exitoCancelacion()) {
+    <p>{{ exitoCancelacion() }}</p>
+  }
 
   @if (cargando()) {
     <p>Cargando...</p>
@@ -24,10 +40,53 @@
       <article class="compra-historial">
         <strong>{{ compra.peliculaNombre }}</strong>
         <span>{{ compra.funcionInicio | date: 'EEEE dd/MM HH:mm' }}</span>
-        <span>{{ compra.cantidadButacas }} entrada(s) · ${{ compra.total }}</span>
+        <span>
+          {{ compra.cantidadButacas }} entrada(s) · ${{ compra.total }}
+          @if (compra.creditoUsado > 0) {
+            (${{ compra.creditoUsado }} con crédito)
+          }
+        </span>
         @if (compra.estado === 'cancelada') {
           <span class="badge-cancelada">Cancelada</span>
+        } @else if (puedeCancelar(compra)) {
+          <button
+            type="button"
+            class="btn-secundario btn-eliminar"
+            [disabled]="cancelandoId() === compra.id"
+            (click)="onCancelar(compra)"
+          >
+            {{ cancelandoId() === compra.id ? 'Cancelando...' : 'Cancelar compra' }}
+          </button>
         }
+      </article>
+    }
+  }
+
+  <h2>Historial de canjes y puntos</h2>
+
+  @if (movimientosPuntos().length === 0) {
+    <p>Todavía no tenés movimientos de puntos. Ganás 1 punto por cada peso que pagás y los canjeás al comprar.</p>
+  } @else {
+    @for (mov of movimientosPuntos(); track mov.id) {
+      <article class="compra-historial">
+        <span>{{ mov.createdAt | date: 'dd/MM/yyyy HH:mm' }}</span>
+        <span>
+          {{ mov.descripcion }} ·
+          <strong [class.texto-preventa]="mov.puntos > 0">{{ mov.puntos > 0 ? '+' : '' }}{{ mov.puntos }} pts</strong>
+        </span>
+      </article>
+    }
+  }
+
+  @if (movimientosCredito().length > 0) {
+    <h2>Movimientos de crédito</h2>
+    @for (mov of movimientosCredito(); track mov.id) {
+      <article class="compra-historial">
+        <span>{{ mov.createdAt | date: 'dd/MM/yyyy HH:mm' }}</span>
+        <span>
+          {{ mov.motivo === 'cancelacion' ? 'Compra cancelada' : 'Usado en una compra' }} ·
+          <strong>{{ mov.monto > 0 ? '+' : '-' }}${{ mov.monto > 0 ? mov.monto : -mov.monto }}</strong>
+        </span>
       </article>
     }
   }

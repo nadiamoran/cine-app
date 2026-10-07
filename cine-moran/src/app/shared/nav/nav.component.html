@@ -1,31 +1,43 @@
-<nav>
-  <a class="marca" routerLink="/">Cine<span>Moran</span></a>
+<nav [class.nav-abierto]="menuAbierto()">
+  <a class="marca" routerLink="/" (click)="cerrarMenu()">Cine<span>Moran</span></a>
 
-  <div class="nav-links">
-    <a routerLink="/">Cartelera</a>
-    <a routerLink="/proximamente">Próximamente</a>
-    @if (authService.currentUser()?.rol === 'administrador') {
-      <a routerLink="/admin/crear-pelicula">Películas</a>
-      <a routerLink="/admin/crear-funcion">Funciones</a>
-      <a routerLink="/admin/salas">Salas</a>
-      <a routerLink="/admin/cupones">Cupones</a>
-      <a routerLink="/admin/crear-producto">Productos</a>
-      <a routerLink="/admin/crear-combo">Combos</a>
+  <!-- solo se ve en pantallas chicas: abre y cierra los links -->
+  <button
+    type="button"
+    class="btn-menu"
+    [attr.aria-expanded]="menuAbierto()"
+    aria-label="Abrir menú"
+    (click)="menuAbierto.set(!menuAbierto())"
+  >
+    ☰
+  </button>
+
+  <!-- routerLinkActive marca con la clase "activo" el link de la página actual.
+       Cartelera ("/") usa exact: si no, quedaría marcada en todas las páginas -->
+  <div class="nav-links" (click)="cerrarMenu()">
+    <a routerLink="/" routerLinkActive="activo" [routerLinkActiveOptions]="{ exact: true }">Cartelera</a>
+    <a routerLink="/proximamente" routerLinkActive="activo">Próximamente</a>
+    @if (authService.currentUser()?.rol === 'cliente') {
+      <a routerLink="/mis-peliculas" routerLinkActive="activo">Mis películas</a>
     }
-    @if (authService.currentUser()?.rol === 'empleado' || authService.currentUser()?.rol === 'administrador') {
-      <a routerLink="/empleado/validar">Validar entrada</a>
+    <!-- el admin tiene un solo link: desde el panel entra a cada sección -->
+    @if (authService.currentUser()?.rol === 'administrador') {
+      <a routerLink="/admin" routerLinkActive="activo">Administración</a>
+    }
+    @if (authService.currentUser()?.rol === 'empleado') {
+      <a routerLink="/empleado/validar" routerLinkActive="activo">Validar entrada</a>
     }
   </div>
 
-  <div class="nav-sesion">
+  <div class="nav-sesion" (click)="cerrarMenu()">
     @if (authService.currentUser()) {
-      <!-- el admin no tiene perfil de cliente: va a su panel -->
-      <a [routerLink]="authService.currentUser()!.rol === 'administrador' ? '/admin' : '/perfil'">
+      <!-- admin y empleado no tienen perfil de cliente: van a su pantalla -->
+      <a [routerLink]="inicioUsuario()">
         Hola, {{ authService.currentUser()!.nombre }}
       </a>
       <button class="btn-secundario" (click)="logout()">Cerrar sesión</button>
     } @else {
-      <a routerLink="/login">Ingresar</a>
+      <a routerLink="/login" routerLinkActive="activo">Ingresar</a>
       <a class="btn-primario" routerLink="/registro">Registrarme</a>
     }
   </div>

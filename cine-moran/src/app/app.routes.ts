@@ -52,6 +52,15 @@ export const routes: Routes = [
   },
 
   {
+    path: 'mis-peliculas',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/mis-peliculas/mis-peliculas.component').then(
+        (m) => m.MisPeliculasComponent,
+      ),
+  },
+
+  {
     path: 'funcion/:id',
     canDeactivate: [confirmarSalidaGuard],
     loadComponent: () =>
@@ -76,6 +85,11 @@ export const routes: Routes = [
     // antes de entrar a CUALQUIER ruta hija, sin repetir canActivate en cada una
     path: 'admin',
     canActivateChild: [adminGuard],
+    // marco común (menú lateral); cada hija se carga dentro de su <router-outlet>
+    loadComponent: () =>
+      import('./features/admin/layout/admin-layout.component').then(
+        (m) => m.AdminLayoutComponent,
+      ),
     children: [
       {
         path: '',
@@ -117,6 +131,28 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/admin/crear-producto/crear-producto.component').then(
             (m) => m.CrearProductoComponent,
+          ),
+      },
+      {
+        // la misma pantalla del empleado, pero dentro del marco de admin
+        path: 'validar',
+        loadComponent: () =>
+          import('./features/empleado/validar-entrada/validar-entrada.component').then(
+            (m) => m.ValidarEntradaComponent,
+          ),
+      },
+      {
+        path: 'actividad',
+        loadComponent: () =>
+          import('./features/admin/actividad/actividad.component').then(
+            (m) => m.ActividadComponent,
+          ),
+      },
+      {
+        path: 'recompensas',
+        loadComponent: () =>
+          import('./features/admin/recompensas/recompensas.component').then(
+            (m) => m.RecompensasComponent,
           ),
       },
       {

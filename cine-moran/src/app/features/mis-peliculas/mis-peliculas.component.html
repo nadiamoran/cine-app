@@ -1,0 +1,38 @@
+<h1>Mis películas</h1>
+
+@if (cargando()) {
+  <p>Cargando...</p>
+} @else if (peliculas().length === 0) {
+  <div class="estado-vacio">
+    <h2>Tu historial está vacío</h2>
+    <p>Cuando veas tu primera película, acá vas a ver su póster, la fecha y tu calificación.</p>
+    <a class="btn-primario" routerLink="/">Ver cartelera</a>
+  </div>
+} @else {
+  <div class="grid-peliculas">
+    @for (pelicula of peliculas(); track pelicula.peliculaId) {
+      <a class="card-pelicula" [routerLink]="['/pelicula', pelicula.peliculaId]">
+        @if (pelicula.imagenUrl) {
+          <img [src]="pelicula.imagenUrl" [alt]="pelicula.nombre" />
+        }
+        <h3>{{ pelicula.nombre }}</h3>
+        <p>
+          Vista el {{ pelicula.ultimaVez | date: 'dd/MM/yyyy' }}
+          @if (pelicula.veces > 1) {
+            · {{ pelicula.veces }} veces
+          }
+        </p>
+
+        @if (pelicula.estrellas !== null) {
+          <p class="calificacion" [attr.aria-label]="'Tu calificación: ' + pelicula.estrellas + ' de 5'">
+            @for (n of estrellas; track n) {
+              <span [class.estrella-llena]="n <= pelicula.estrellas!">★</span>
+            }
+          </p>
+        } @else {
+          <p class="sin-calificar">Calificala →</p>
+        }
+      </a>
+    }
+  </div>
+}

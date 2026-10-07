@@ -25,7 +25,7 @@
 } @else {
   <div class="grid-peliculas">
     @for (pelicula of peliculasFiltradas(); track pelicula.id) {
-      <app-tarjeta-pelicula [pelicula]="pelicula" />
+      <app-tarjeta-pelicula [pelicula]="pelicula" [puestoVentas]="puestosVentas().get(pelicula.id) ?? null" />
     }
   </div>
 }

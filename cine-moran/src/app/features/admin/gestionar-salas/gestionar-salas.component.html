@@ -1,8 +1,12 @@
-<h1>Salas</h1>
+<!-- título a la izquierda y el botón "Nuevo" a la derecha -->
+<div class="encabezado-admin">
+  <h1>Salas</h1>
+  @if (!mostrarFormulario()) {
+    <button type="button" (click)="onNuevaSala()">+ Nueva sala</button>
+  }
+</div>
 
-@if (!mostrarFormulario()) {
-  <button type="button" class="btn-nueva-pelicula" (click)="onNuevaSala()">+ Nueva sala</button>
-} @else {
+@if (mostrarFormulario()) {
 <h2>Agregar sala</h2>
 
 <form novalidate [formGroup]="salaForm" (ngSubmit)="onSubmit()">
@@ -62,4 +66,51 @@
       </label>
     </article>
   }
+}
+
+<h2>Precios de entradas</h2>
+
+<p class="detalle-seleccion">
+  Un precio por formato para la butaca estándar y otro para la VIP (filas R, S y T). Las butacas
+  accesibles pagan el precio estándar. Al guardar se actualizan las funciones que todavía no
+  empezaron; las compras ya hechas no cambian.
+</p>
+
+@if (!preciosCargados()) {
+  <p>Cargando precios...</p>
+} @else {
+  <table class="tabla-precios">
+    <thead>
+      <tr>
+        <th>Formato</th>
+        <th>Estándar ($)</th>
+        <th>VIP ($)</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (fila of preciosForm.controls; track fila.controls.formato.value; let i = $index) {
+        <tr [formGroup]="fila">
+          <td>{{ fila.controls.formato.value.toUpperCase() }}</td>
+          <td><input type="number" formControlName="precio" min="0" step="1" /></td>
+          <td>
+            <input type="number" formControlName="precioVip" min="0" step="1" />
+            @if (vipNoEsMayor(i)) {
+              <small class="error">Tiene que ser mayor que la estándar</small>
+            }
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+
+  @if (errorPrecios()) {
+    <p class="error">{{ errorPrecios() }}</p>
+  }
+  @if (exitoPrecios()) {
+    <p>{{ exitoPrecios() }}</p>
+  }
+
+  <button type="button" [disabled]="guardandoPrecios()" (click)="onGuardarPrecios()">
+    {{ guardandoPrecios() ? 'Guardando...' : 'Guardar precios' }}
+  </button>
 }

@@ -5,9 +5,13 @@ import { AuthService } from '../auth/auth.service';
 // canMatch (no canActivate): si no matchea, el router sigue probando otras
 // rutas en vez de activar esta a medias. Un administrador también puede
 // validar entradas, no solo el rol "empleado".
-export const empleadoGuard: CanMatchFn = () => {
+export const empleadoGuard: CanMatchFn = async () => {
   const authService = inject(AuthService);
   const router = inject(Router);
+
+  // espera a que se restaure la sesión (si no, al recargar la página
+  // parecería que no hay nadie logueado)
+  await authService.sesionLista;
 
   const rol = authService.currentUser()?.rol;
   if (rol === 'empleado' || rol === 'administrador') {

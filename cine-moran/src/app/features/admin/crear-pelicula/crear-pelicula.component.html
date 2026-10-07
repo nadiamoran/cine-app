@@ -1,8 +1,12 @@
-<h1>Películas</h1>
+<!-- título a la izquierda y el botón "Nuevo" a la derecha -->
+<div class="encabezado-admin">
+  <h1>Películas</h1>
+  @if (!mostrarFormulario()) {
+    <button type="button" (click)="onNuevaPelicula()">+ Nueva película</button>
+  }
+</div>
 
-@if (!mostrarFormulario()) {
-  <button type="button" class="btn-nueva-pelicula" (click)="onNuevaPelicula()">+ Nueva película</button>
-} @else {
+@if (mostrarFormulario()) {
 <h2>Agregar película</h2>
 
 <form novalidate [formGroup]="peliculaForm" (ngSubmit)="onSubmit()">
@@ -81,6 +85,27 @@
     <input type="date" formControlName="fechaEstreno" />
   </label>
 
+  <fieldset class="bloque-preventa">
+    <legend>Preventa</legend>
+    <label class="check-preventa">
+      <input type="checkbox" formControlName="tienePreventa" />
+      Tiene preventa
+    </label>
+    @if (!peliculaForm.controls.fechaEstreno.value) {
+      <small>Cargá la fecha de estreno para activar la preventa.</small>
+    } @else if (peliculaForm.controls.tienePreventa.value) {
+      <label>
+        Descuento de preventa ($)
+        <input type="number" formControlName="preventaDescuento" min="1" step="1" />
+      </label>
+      <app-tabla-preventa
+        [precios]="precios()"
+        [descuento]="peliculaForm.controls.preventaDescuento.value"
+        [fechaEstreno]="peliculaForm.controls.fechaEstreno.value"
+      />
+    }
+  </fieldset>
+
   <label>
     Imagen
     <input #inputImagen type="file" accept="image/*" (change)="onArchivoSeleccionado($event)" />
@@ -116,6 +141,15 @@
             {{ etiquetaEstado(pelicula.estado) }}
           </span>
         </p>
+        <p class="detalle-seleccion">
+          Estreno: {{ pelicula.fechaEstreno ? (pelicula.fechaEstreno | date: 'dd/MM/yyyy') : 'sin fecha' }}
+          @if (resumenPreventa(pelicula); as resumen) {
+            · <span class="texto-preventa">{{ resumen }}</span>
+          }
+        </p>
+        @if (preventaEditandoId() !== pelicula.id) {
+          <button type="button" class="btn-secundario" (click)="onAbrirPreventa(pelicula)">Preventa</button>
+        }
       </div>
 
       <label class="estado-pelicula">
@@ -133,5 +167,44 @@
         </select>
       </label>
     </article>
+
+    @if (preventaEditandoId() === pelicula.id) {
+      <form novalidate class="bloque-preventa" [formGroup]="preventaForm" (ngSubmit)="onGuardarPreventa(pelicula)">
+        <h3>Preventa de {{ pelicula.nombre }}</h3>
+
+        <label>
+          Fecha de estreno
+          <input type="date" formControlName="fechaEstreno" />
+        </label>
+
+        <label class="check-preventa">
+          <input type="checkbox" formControlName="tienePreventa" />
+          Tiene preventa
+        </label>
+
+        @if (!preventaForm.controls.fechaEstreno.value) {
+          <small>Cargá la fecha de estreno para activar la preventa.</small>
+        } @else if (preventaForm.controls.tienePreventa.value) {
+          <label>
+            Descuento de preventa ($)
+            <input type="number" formControlName="preventaDescuento" min="1" step="1" />
+          </label>
+          <app-tabla-preventa
+            [precios]="precios()"
+            [descuento]="preventaForm.controls.preventaDescuento.value"
+            [fechaEstreno]="preventaForm.controls.fechaEstreno.value"
+          />
+        }
+
+        @if (errorPreventa()) {
+          <p class="error">{{ errorPreventa() }}</p>
+        }
+
+        <button type="submit" [disabled]="guardandoPreventa()">
+          {{ guardandoPreventa() ? 'Guardando...' : 'Guardar preventa' }}
+        </button>
+        <button type="button" class="btn-secundario" (click)="onCancelarPreventa()">Cancelar</button>
+      </form>
+    }
   }
 }

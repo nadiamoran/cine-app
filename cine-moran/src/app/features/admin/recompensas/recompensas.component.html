@@ -1,0 +1,121 @@
+<!-- título a la izquierda y el botón "Nueva" a la derecha -->
+<div class="encabezado-admin">
+  <h1>Recompensas</h1>
+  @if (!mostrarFormulario()) {
+    <button type="button" (click)="onNueva()">+ Nueva recompensa</button>
+  }
+</div>
+
+<p class="detalle-seleccion">
+  Lo que los clientes registrados pueden pagar con puntos al comprar (1 punto por cada peso pagado).
+  Las entradas canjeadas son generales (no VIP); los productos se retiran con el mismo QR.
+</p>
+
+@if (mostrarFormulario()) {
+<h2>Agregar recompensa</h2>
+
+<form novalidate [formGroup]="recompensaForm" (ngSubmit)="onSubmit()">
+  <label>
+    Tipo
+    <select formControlName="tipo">
+      <option value="entrada">Entrada gratis</option>
+      <option value="producto">Producto del candy bar</option>
+    </select>
+  </label>
+
+  @if (recompensaForm.controls.tipo.value === 'producto') {
+    <label>
+      Producto
+      <select formControlName="productoId" (change)="onElegirProducto($any($event.target).value)">
+        <option value="" disabled>Elegí un producto</option>
+        @for (producto of productos(); track producto.id) {
+          <option [value]="producto.id">{{ producto.nombre }} (${{ producto.precio }})</option>
+        }
+      </select>
+    </label>
+  } @else {
+    <label>
+      Formato
+      <select formControlName="formato">
+        <option value="">Cualquier formato</option>
+        @for (formato of formatos; track formato) {
+          <option [value]="formato">Solo {{ formato.toUpperCase() }}</option>
+        }
+      </select>
+    </label>
+  }
+
+  <label>
+    Nombre
+    <input type="text" formControlName="nombre" placeholder="Entrada gratis 2D" />
+    @if (recompensaForm.controls.nombre.touched && recompensaForm.controls.nombre.invalid) {
+      <small class="error">El nombre es obligatorio</small>
+    }
+  </label>
+
+  <label>
+    Puntos que cuesta
+    <input type="number" formControlName="puntos" min="1" step="1" />
+    @if (recompensaForm.controls.puntos.touched && recompensaForm.controls.puntos.invalid) {
+      <small class="error">Tiene que costar 1 punto o más</small>
+    }
+  </label>
+
+  @if (errorMsg()) {
+    <p class="error">{{ errorMsg() }}</p>
+  }
+
+  <button type="submit" [disabled]="guardando()">
+    {{ guardando() ? 'Guardando...' : 'Crear recompensa' }}
+  </button>
+  <button type="button" class="btn-secundario" (click)="onCancelar()">Cancelar</button>
+</form>
+}
+
+@if (!mostrarFormulario() && errorMsg()) {
+  <p class="error">{{ errorMsg() }}</p>
+}
+@if (exito()) {
+  <p>{{ exito() }}</p>
+}
+
+@if (cargando() && recompensas().length === 0) {
+  <p>Cargando...</p>
+} @else if (recompensas().length === 0) {
+  <p>Todavía no hay recompensas. Creá la primera para que los puntos se puedan canjear.</p>
+} @else {
+  @for (recompensa of recompensas(); track recompensa.id) {
+    <article class="cupon-item">
+      <div>
+        <strong>{{ recompensa.nombre }}</strong>
+        <p class="detalle-seleccion">
+          {{ detalle(recompensa) }}
+          <span [class]="'badge-estado ' + (recompensa.activa ? 'estado-habilitada' : 'estado-deshabilitada')">
+            {{ recompensa.activa ? 'Activa' : 'Inactiva' }}
+          </span>
+        </p>
+      </div>
+
+      <label>
+        Puntos
+        <input
+          type="number"
+          min="1"
+          [value]="recompensa.puntos"
+          [disabled]="guardandoId() === recompensa.id"
+          #puntosInput
+          (change)="onGuardarPuntos(recompensa, puntosInput.value)"
+        />
+      </label>
+
+      <button
+        type="button"
+        class="btn-secundario"
+        [disabled]="guardandoId() === recompensa.id"
+        (click)="onToggleActiva(recompensa)"
+      >
+        {{ recompensa.activa ? 'Desactivar' : 'Activar' }}
+      </button>
+    </article>
+  }
+}

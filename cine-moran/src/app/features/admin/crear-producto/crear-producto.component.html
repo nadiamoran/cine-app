@@ -1,8 +1,12 @@
-<h1>Productos</h1>
+<!-- título a la izquierda y el botón "Nuevo" a la derecha -->
+<div class="encabezado-admin">
+  <h1>Productos</h1>
+  @if (!mostrarFormulario()) {
+    <button type="button" (click)="onNuevoProducto()">+ Nuevo producto</button>
+  }
+</div>
 
-@if (!mostrarFormulario()) {
-  <button type="button" class="btn-nueva-pelicula" (click)="onNuevoProducto()">+ Nuevo producto</button>
-} @else {
+@if (mostrarFormulario()) {
 <h2>{{ editandoId() ? 'Editar producto' : 'Agregar producto' }}</h2>
 
 <form novalidate [formGroup]="productoForm" (ngSubmit)="onSubmit()">

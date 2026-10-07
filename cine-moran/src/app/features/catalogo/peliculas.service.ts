@@ -10,14 +10,23 @@ export class PeliculasService {
     return this.supabaseService.client;
   }
 
+  // fecha de hoy como "yyyy-mm-dd" (igual que fecha_estreno en la base)
+  private hoy(): string {
+    const ahora = new Date();
+    const mes = String(ahora.getMonth() + 1).padStart(2, '0');
+    const dia = String(ahora.getDate()).padStart(2, '0');
+    return `${ahora.getFullYear()}-${mes}-${dia}`;
+  }
+
   async getCartelera(): Promise<Pelicula[]> {
     const { data, error } = await this.supabase
       .from('peliculas')
       .select('*')
-      // el admin decide qué se ve en la cartelera con el estado de la película
-      .eq('estado', 'en_cartelera')
-      // más vendidas primero (RF-07); hoy todas están en 0, se va a notar
-      // cuando exista el módulo de compra
+      // las que el admin puso "En cartelera", más las "Próximamente" cuyo
+      // estreno ya llegó: el día del estreno pasan solas a la cartelera
+      .or(`estado.eq.en_cartelera,and(estado.eq.proximamente,fecha_estreno.lte.${this.hoy()})`)
+      // más vendidas primero (RF-04): ventas lo mantienen los triggers de
+      // la migración 020 (cantidad de entradas vendidas)
       .order('ventas', { ascending: false })
       .order('nombre', { ascending: true });
 
@@ -52,12 +61,15 @@ export class PeliculasService {
   }
 
     async getProximamente(): Promise<Pelicula[]> {
-    // las que el admin marcó como "Próximamente"; las que tienen fecha de
-    // estreno van primero, ordenadas por esa fecha
+    // las que el admin marcó como "Próximamente" y todavía no se estrenaron
+    // (o sin fecha: "a confirmar"); las que tienen fecha van primero,
+    // ordenadas por esa fecha. Desde el día del estreno salen de acá y
+    // aparecen en la cartelera (getCartelera)
     const { data, error } = await this.supabase
       .from('peliculas')
       .select('*')
       .eq('estado', 'proximamente')
+      .or(`fecha_estreno.is.null,fecha_estreno.gt.${this.hoy()}`)
       .order('fecha_estreno', { ascending: true, nullsFirst: false });
 
     if (error || !data) return [];
@@ -76,6 +88,7 @@ export class PeliculasService {
       ventas: row.ventas,
       fechaEstreno: row.fecha_estreno,
       estado: row.estado ?? 'en_cartelera',
+      preventaDescuento: row.preventa_descuento ?? null,
     };
   }
 
@@ -105,6 +118,7 @@ export class PeliculasService {
     fechaEstreno: string | null;
     imagenUrl: string | null;
     estado: EstadoPelicula;
+    preventaDescuento: number | null;
   }): Promise<{ error: string | null }> {
     const { error } = await this.supabase.from('peliculas').insert({
       nombre: datos.nombre,
@@ -115,8 +129,23 @@ export class PeliculasService {
       fecha_estreno: datos.fechaEstreno || null,
       imagen_url: datos.imagenUrl,
       estado: datos.estado,
+      preventa_descuento: datos.preventaDescuento,
     });
 
+    return { error: error?.message ?? null };
+  }
+
+  // RF-29: la base valida la preventa con un trigger (migración 023):
+  // exige fecha de estreno y que el descuento no deje entradas en $0
+  async actualizarPreventa(
+    id: string,
+    fechaEstreno: string | null,
+    preventaDescuento: number | null,
+  ): Promise<{ error: string | null }> {
+    const { error } = await this.supabase
+      .from('peliculas')
+      .update({ fecha_estreno: fechaEstreno || null, preventa_descuento: preventaDescuento })
+      .eq('id', id);
     return { error: error?.message ?? null };
   }
 

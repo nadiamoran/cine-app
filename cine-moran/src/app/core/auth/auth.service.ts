@@ -8,9 +8,15 @@ export class AuthService {
   // Se usa en el guard y en cualquier componente que necesite saber "quién está logueado".
   currentUser = signal<Profile | null>(null);
 
+  // Se resuelve cuando terminó de restaurarse la sesión guardada. Recuperarla
+  // es asíncrono: si un guard o una pantalla mira currentUser() antes de que
+  // termine (por ejemplo al recargar con F5), cree que no hay nadie logueado.
+  // Por eso los que dependen del usuario esperan esta promesa primero.
+  readonly sesionLista: Promise<void>;
+
   constructor(private supabaseService: SupabaseService) {
     // Al arrancar la app, restauramos la sesión si Supabase la tiene guardada (localStorage)
-    this.restoreSession();
+    this.sesionLista = this.restoreSession();
   }
 
   private get supabase() {
@@ -100,6 +106,7 @@ export class AuthService {
         diasVacaciones: data.dias_vacaciones,
         rol: data.rol,
         puntos: data.puntos,
+        credito: data.credito ?? 0,
       });
     }
   }

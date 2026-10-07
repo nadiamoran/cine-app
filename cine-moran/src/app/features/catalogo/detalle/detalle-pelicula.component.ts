@@ -11,6 +11,7 @@ import { DuracionPipe } from '../../../shared/pipes/duracion.pipe';
 import { FuncionesService } from '../../funciones/funciones.service';
 import { Funcion } from '../../funciones/funcion.model';
 import { OrdenesService } from '../../ordenes/ordenes.service';
+import { infoPreventa, precioVigente } from '../preventa.utils';
 
 @Component({
   selector: 'app-detalle-pelicula',
@@ -26,6 +27,13 @@ export class DetallePeliculaComponent implements OnInit {
   enviandoResena = signal(false);
   errorResena = signal<string | null>(null);
   yaVioPelicula = signal(false);
+
+  // RF-29: estado de la preventa (sin preventa / por abrir / abierta / terminada)
+  readonly precioVigente = precioVigente;
+  preventa = computed(() => {
+    const pelicula = this.pelicula();
+    return pelicula ? infoPreventa(pelicula) : null;
+  });
 
   // se recalcula solo cuando cambia la lista de reseñas
   promedio = computed(() => {
@@ -65,6 +73,9 @@ export class DetallePeliculaComponent implements OnInit {
     this.peliculaId = this.route.snapshot.paramMap.get('id')!;
     this.cargando.set(true);
 
+    // con la sesión ya restaurada: si no, al entrar directo (o recargar) no
+    // sabría que el usuario está logueado y no lo dejaría calificar
+    await this.authService.sesionLista;
     const usuario = this.authService.currentUser();
 
     const [pelicula, resenas, funciones, yaVioPelicula] = await Promise.all([

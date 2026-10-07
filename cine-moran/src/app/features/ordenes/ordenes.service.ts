@@ -1,6 +1,13 @@
 import { Injectable } from '@angular/core';
 import { SupabaseService } from '../../core/supabase.service';
-import { OrdenConButacas, CompraHistorial, Cupon } from './orden.model';
+import {
+  OrdenConButacas,
+  CompraHistorial,
+  Cupon,
+  PeliculaVista,
+  MetodoPago,
+  MovimientoCredito,
+} from './orden.model';
 
 @Injectable({ providedIn: 'root' })
 export class OrdenesService {
@@ -79,12 +86,14 @@ export class OrdenesService {
     return !!data;
   }
 
-  // Historial de compras del usuario logueado (RLS de "ordenes" ya limita
-  // esto a sus propias ordenes: ver supabase/migraciones/004_ordenes.sql)
-  async getHistorial(): Promise<CompraHistorial[]> {
+  // Historial de compras del usuario logueado. La policy de "ordenes"
+  // (migración 004) también deja ver TODAS a empleados y admin, así que se
+  // filtra explícito por el usuario: cada uno ve solo lo que compró.
+  async getHistorial(usuarioId: string): Promise<CompraHistorial[]> {
     const { data, error } = await this.supabase
       .from('ordenes')
-      .select('id, cantidad_butacas, total, estado, created_at, funciones(inicio, peliculas(nombre))')
+      .select('id, cantidad_butacas, total, credito_usado, estado, created_at, funciones(inicio, peliculas(nombre))')
+      .eq('usuario_id', usuarioId)
       .order('created_at', { ascending: false });
 
     if (error || !data) {
@@ -98,9 +107,65 @@ export class OrdenesService {
       funcionInicio: row.funciones?.inicio ?? '',
       cantidadButacas: row.cantidad_butacas,
       total: row.total,
+      creditoUsado: row.credito_usado ?? 0,
       estado: row.estado,
       createdAt: row.created_at,
     }));
+  }
+
+  // RF-12 "Mis películas". Mismo criterio que usuario_vio_pelicula() (la
+  // regla para poder dejar reseña, migración 006): "la vio" = tiene una
+  // compra confirmada con entradas de una función que ya empezó.
+  async getPeliculasVistas(usuarioId: string): Promise<PeliculaVista[]> {
+    const ahora = new Date().toISOString();
+
+    const [ordenes, resenas] = await Promise.all([
+      this.supabase
+        .from('ordenes')
+        // !inner: solo órdenes cuya función cumple el filtro de abajo
+        .select('funcion_id, funciones!inner(inicio, peliculas(id, nombre, imagen_url))')
+        // la policy de ordenes también deja ver todas a empleados y admin:
+        // acá filtro explícito por el usuario para traer solo lo suyo
+        .eq('usuario_id', usuarioId)
+        .eq('estado', 'confirmada')
+        .gt('cantidad_butacas', 0)
+        .lte('funciones.inicio', ahora),
+      this.supabase.from('resenas').select('pelicula_id, estrellas').eq('usuario_id', usuarioId),
+    ]);
+
+    if (ordenes.error || !ordenes.data) {
+      console.error('Error trayendo películas vistas:', ordenes.error);
+      return [];
+    }
+
+    const estrellasPorPelicula = new Map<string, number>(
+      (resenas.data ?? []).map((r: any) => [r.pelicula_id, r.estrellas]),
+    );
+
+    // una tarjeta por película (aunque la haya visto varias veces)
+    const porPelicula = new Map<string, PeliculaVista & { funciones: Set<string> }>();
+    for (const row of ordenes.data as any[]) {
+      const pelicula = row.funciones?.peliculas;
+      if (!pelicula) continue;
+
+      const vista = porPelicula.get(pelicula.id) ?? {
+        peliculaId: pelicula.id,
+        nombre: pelicula.nombre,
+        imagenUrl: pelicula.imagen_url,
+        ultimaVez: row.funciones.inicio,
+        veces: 0,
+        estrellas: estrellasPorPelicula.get(pelicula.id) ?? null,
+        funciones: new Set<string>(),
+      };
+      vista.funciones.add(row.funcion_id);
+      vista.veces = vista.funciones.size;
+      if (row.funciones.inicio > vista.ultimaVez) vista.ultimaVez = row.funciones.inicio;
+      porPelicula.set(pelicula.id, vista);
+    }
+
+    return Array.from(porPelicula.values())
+      .map(({ funciones, ...vista }) => vista)
+      .sort((a, b) => b.ultimaVez.localeCompare(a.ultimaVez)); // la más reciente primero
   }
 
   // crear_orden es una funcion de la base (security definer): crea la orden
@@ -114,6 +179,12 @@ export class OrdenesService {
     email: string,
     productoIds: string[] = [],
     comboIds: string[] = [],
+    // RF-28: usar el crédito de la cuenta; el resto se paga con el medio
+    // elegido (pago simulado). La base decide cuánto crédito se usa.
+    usarCredito = false,
+    metodoPago: MetodoPago | null = null,
+    // RF-41: recompensas pagadas con puntos (un id repetido = esa cantidad)
+    recompensaIds: string[] = [],
   ): Promise<{ resultado: OrdenConButacas | null; error: string | null }> {
     const { data, error } = await this.supabase.rpc('crear_orden', {
       p_funcion_id: funcionId,
@@ -121,6 +192,9 @@ export class OrdenesService {
       p_email: email,
       p_producto_ids: productoIds,
       p_combo_ids: comboIds,
+      p_usar_credito: usarCredito,
+      p_metodo_pago: metodoPago,
+      p_recompensa_ids: recompensaIds,
     });
 
     if (error || !data) {
@@ -137,13 +211,62 @@ export class OrdenesService {
           cantidadButacas: data.orden.cantidad_butacas,
           total: data.orden.total,
           estado: data.orden.estado,
+          creditoUsado: data.orden.credito_usado ?? 0,
+          metodoPago: data.orden.metodo_pago ?? null,
         },
         butacas: data.butacas,
         productos: data.productos ?? [],
         cuponAplicado: data.cuponAplicado,
+        puntosGanados: data.puntosGanados ?? 0,
+        puntosUsados: data.puntosUsados ?? 0,
       },
       error: null,
     };
+  }
+
+  // RF-44 a RF-47: cancelar_orden (migración 024) valida todo en la base:
+  // que sea del usuario, hasta 2 h antes, sin entradas validadas ni candy
+  // retirado. Acredita el total como crédito y libera las butacas.
+  async cancelar(
+    ordenId: string,
+  ): Promise<{
+    creditoAcreditado: number;
+    puntosDescontados: number;
+    puntosDevueltos: number;
+    error: string | null;
+  }> {
+    const { data, error } = await this.supabase.rpc('cancelar_orden', { p_orden_id: ordenId });
+
+    if (error || !data) {
+      return {
+        creditoAcreditado: 0,
+        puntosDescontados: 0,
+        puntosDevueltos: 0,
+        error: error?.message ?? 'No se pudo cancelar',
+      };
+    }
+    return {
+      creditoAcreditado: data.creditoAcreditado,
+      puntosDescontados: data.puntosDescontados,
+      puntosDevueltos: data.puntosDevueltos ?? 0,
+      error: null,
+    };
+  }
+
+  // historial de crédito del perfil (RLS: cada usuario ve solo los suyos)
+  async getMovimientosCredito(): Promise<MovimientoCredito[]> {
+    const { data, error } = await this.supabase
+      .from('creditos_movimientos')
+      .select('id, monto, motivo, created_at')
+      .order('created_at', { ascending: false });
+
+    if (error || !data) return [];
+    return data.map((row: any) => ({
+      id: row.id,
+      monto: row.monto,
+      motivo: row.motivo,
+      createdAt: row.created_at,
+    }));
   }
 
   // --- cupones (administracion) ---

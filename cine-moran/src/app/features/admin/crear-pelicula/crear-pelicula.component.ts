@@ -1,12 +1,18 @@
 import { Component, ElementRef, OnInit, ViewChild, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { DatePipe } from '@angular/common';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { PeliculasService } from '../../catalogo/peliculas.service';
 import { ESTADOS_PELICULA, EstadoPelicula, Pelicula } from '../../catalogo/pelicula.model';
+import { FuncionesService } from '../../funciones/funciones.service';
+import { PrecioEntrada } from '../../funciones/funcion.model';
+import { infoPreventa } from '../../catalogo/preventa.utils';
+import { TablaPreventaComponent } from './tabla-preventa.component';
 
 @Component({
   selector: 'app-crear-pelicula',
   standalone: true,
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, DatePipe, TablaPreventaComponent],
   templateUrl: './crear-pelicula.component.html',
 })
 export class CrearPeliculaComponent implements OnInit {
@@ -44,14 +50,115 @@ export class CrearPeliculaComponent implements OnInit {
     restriccionEdad: new FormControl('sin_restriccion', { nonNullable: true }),
     estado: new FormControl<EstadoPelicula>('en_cartelera', { nonNullable: true }),
     fechaEstreno: new FormControl('', { nonNullable: true }),
+    // RF-29: preventa (necesita fecha de estreno)
+    tienePreventa: new FormControl({ value: false, disabled: true }, { nonNullable: true }),
+    preventaDescuento: new FormControl<number | null>(null),
   });
 
   // por si el genero todavia no existe en ninguna pelicula
   nuevoGenero = new FormControl('', { nonNullable: true });
 
-  constructor(private peliculasService: PeliculasService) {}
+  // ---- RF-29: preventa ----
+  // tabla general de precios, para la vista previa con el descuento
+  precios = signal<PrecioEntrada[]>([]);
+  // película cuyo panel "Preventa" está abierto en el listado
+  preventaEditandoId = signal<string | null>(null);
+  guardandoPreventa = signal(false);
+  errorPreventa = signal<string | null>(null);
+
+  // las películas ya creadas no se editan: este form cambia solo estreno + preventa
+  preventaForm = new FormGroup({
+    fechaEstreno: new FormControl('', { nonNullable: true }),
+    tienePreventa: new FormControl({ value: false, disabled: true }, { nonNullable: true }),
+    preventaDescuento: new FormControl<number | null>(null),
+  });
+
+  constructor(
+    private peliculasService: PeliculasService,
+    private funcionesService: FuncionesService,
+  ) {
+    // sin fecha de estreno no hay preventa: la casilla queda deshabilitada
+    for (const form of [this.peliculaForm, this.preventaForm]) {
+      form.controls.fechaEstreno.valueChanges
+        .pipe(takeUntilDestroyed())
+        .subscribe((fecha) => this.habilitarPreventa(form.controls.tienePreventa, !!fecha));
+    }
+  }
 
   async ngOnInit() {
+    const [precios] = await Promise.all([this.funcionesService.getPrecios(), this.recargar()]);
+    this.precios.set(precios);
+  }
+
+  private habilitarPreventa(control: FormControl<boolean>, hayFecha: boolean) {
+    if (hayFecha) {
+      control.enable({ emitEvent: false });
+    } else {
+      control.setValue(false, { emitEvent: false });
+      control.disable({ emitEvent: false });
+    }
+  }
+
+  // misma regla que el trigger de la base (migración 023); devuelve el error o null
+  private validarPreventa(fechaEstreno: string, tienePreventa: boolean, descuento: number | null) {
+    if (!tienePreventa) return null;
+    if (!fechaEstreno) return 'Cargá la fecha de estreno para activar la preventa.';
+    if (!descuento || descuento <= 0) return 'Ingresá el descuento de preventa (mayor a $0).';
+    const minimo = Math.min(...this.precios().map((p) => p.precio));
+    if (this.precios().length > 0 && descuento >= minimo) {
+      return `El descuento tiene que ser menor que $${minimo} (la entrada estándar más barata).`;
+    }
+    return null;
+  }
+
+  // texto corto para la fila del listado
+  resumenPreventa(pelicula: Pelicula): string | null {
+    const info = infoPreventa(pelicula);
+    if (info.estado === 'sin_preventa') return null;
+    if (info.estado === 'terminada') return `Preventa terminada (-$${info.descuento})`;
+    if (info.estado === 'abierta') return `Preventa abierta: -$${info.descuento}`;
+    const apertura = info.apertura!.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' });
+    return `Preventa: -$${info.descuento} · abre el ${apertura}`;
+  }
+
+  onAbrirPreventa(pelicula: Pelicula) {
+    this.errorPreventa.set(null);
+    this.preventaForm.setValue({
+      fechaEstreno: pelicula.fechaEstreno ?? '',
+      tienePreventa: pelicula.preventaDescuento !== null,
+      preventaDescuento: pelicula.preventaDescuento,
+    });
+    this.habilitarPreventa(this.preventaForm.controls.tienePreventa, !!pelicula.fechaEstreno);
+    this.preventaEditandoId.set(pelicula.id);
+  }
+
+  onCancelarPreventa() {
+    this.preventaEditandoId.set(null);
+    this.errorPreventa.set(null);
+  }
+
+  async onGuardarPreventa(pelicula: Pelicula) {
+    const { fechaEstreno, tienePreventa, preventaDescuento } = this.preventaForm.getRawValue();
+    const error = this.validarPreventa(fechaEstreno, tienePreventa, preventaDescuento);
+    if (error) {
+      this.errorPreventa.set(error);
+      return;
+    }
+
+    this.guardandoPreventa.set(true);
+    const resultado = await this.peliculasService.actualizarPreventa(
+      pelicula.id,
+      fechaEstreno || null,
+      tienePreventa ? preventaDescuento : null,
+    );
+    this.guardandoPreventa.set(false);
+
+    if (resultado.error) {
+      this.errorPreventa.set(resultado.error);
+      return;
+    }
+
+    this.preventaEditandoId.set(null);
     await this.recargar();
   }
 
@@ -141,8 +248,18 @@ export class CrearPeliculaComponent implements OnInit {
       return;
     }
 
-    this.guardando.set(true);
     const valores = this.peliculaForm.getRawValue();
+    const errorPreventa = this.validarPreventa(
+      valores.fechaEstreno,
+      valores.tienePreventa,
+      valores.preventaDescuento,
+    );
+    if (errorPreventa) {
+      this.errorMsg.set(errorPreventa);
+      return;
+    }
+
+    this.guardando.set(true);
 
     let imagenUrl: string | null = null;
     if (this.archivoImagen()) {
@@ -158,6 +275,7 @@ export class CrearPeliculaComponent implements OnInit {
       fechaEstreno: valores.fechaEstreno || null,
       imagenUrl,
       estado: valores.estado,
+      preventaDescuento: valores.tienePreventa ? valores.preventaDescuento : null,
     });
 
     this.guardando.set(false);
@@ -184,6 +302,7 @@ export class CrearPeliculaComponent implements OnInit {
 
   private limpiarFormulario() {
     this.peliculaForm.reset();
+    this.habilitarPreventa(this.peliculaForm.controls.tienePreventa, false);
     this.nuevoGenero.setValue('');
     this.archivoImagen.set(null);
     this.previewUrl.set(null);

@@ -19,5 +19,7 @@ export interface Pelicula {
   ventas: number;
   fechaEstreno: string | null;
   estado: EstadoPelicula;
+  // RF-29: descuento en pesos durante la preventa; null = sin preventa
+  preventaDescuento: number | null;
 }
 

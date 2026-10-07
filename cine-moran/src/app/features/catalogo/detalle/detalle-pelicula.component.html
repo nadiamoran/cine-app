@@ -3,7 +3,7 @@
 } @else if (!pelicula()) {
   <p>No se encontró la película.</p>
 } @else {
-  <a routerLink="/">← Volver a la cartelera</a>
+  <a class="link-volver" routerLink="/"><span aria-hidden="true">←</span> Volver a la cartelera</a>
 
   <div class="detalle-pelicula">
     @if (pelicula()!.imagen_url) {
@@ -18,6 +18,8 @@
         <span class="badge-restriccion">
           Apta {{ pelicula()!.restriccionEdad }} — debe ir acompañado de un adulto
         </span>
+      } @else {
+        <span class="badge-restriccion badge-atp">ATP — Apta para todo público</span>
       }
 
       <p>{{ pelicula()!.sinopsis }}</p>
@@ -31,6 +33,19 @@
   <section class="funciones">
     <h2>Horarios</h2>
 
+    @if (preventa(); as pv) {
+      @if (pv.estado === 'abierta') {
+        <p class="aviso-preventa">
+          Preventa: ${{ pv.descuento }} menos en todas las entradas, comprando hasta el
+          {{ pv.ultimoDia | date: 'dd/MM' }}.
+        </p>
+      } @else if (pv.estado === 'por_abrir') {
+        <p class="aviso-preventa">
+          La preventa abre el {{ pv.apertura | date: 'dd/MM' }}, con ${{ pv.descuento }} menos en todas las entradas.
+        </p>
+      }
+    }
+
     @if (funciones().length === 0) {
       <p>No hay funciones programadas por ahora.</p>
     } @else {
@@ -40,8 +55,17 @@
           {{ funcion.formato.toUpperCase() }} ·
           {{ funcion.idioma === 'castellano' ? 'Castellano' : 'Subtitulada' }} ·
           {{ funcion.nombreSala }} ·
-          ${{ funcion.precio }}
-          <a [routerLink]="['/funcion', funcion.id]">Comprar entradas</a>
+          @if (preventa()?.estado === 'abierta') {
+            ${{ precioVigente(funcion.precio, preventa()!) }}
+            <span class="precio-tachado">${{ funcion.precio }}</span>
+          } @else {
+            ${{ funcion.precio }}
+          }
+          @if (preventa()?.estado === 'por_abrir') {
+            <span class="detalle-seleccion">Venta desde el {{ preventa()!.apertura | date: 'dd/MM' }}</span>
+          } @else {
+            <a [routerLink]="['/funcion', funcion.id]">Comprar entradas</a>
+          }
         </article>
       }
     }

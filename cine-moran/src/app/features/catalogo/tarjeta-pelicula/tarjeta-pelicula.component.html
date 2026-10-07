@@ -1,11 +1,17 @@
 <a class="card-pelicula" [routerLink]="['/pelicula', pelicula().id]">
+  @if (puestoVentas()) {
+    <span class="badge-mas-vendida">Más vendida #{{ puestoVentas() }}</span>
+  }
   @if (pelicula().imagen_url) {
     <img [src]="pelicula().imagen_url" [alt]="pelicula().nombre" />
   }
   <h3>{{ pelicula().nombre }}</h3>
   <p>{{ pelicula().duracionMinutos | duracion }}</p>
   <p>{{ pelicula().generos.join(', ') }}</p>
+  <!-- calificación como en los cines: ATP (apta para todo público), +13 o +18 -->
   @if (pelicula().restriccionEdad !== 'sin_restriccion') {
     <span class="badge-restriccion">{{ pelicula().restriccionEdad }}</span>
+  } @else {
+    <span class="badge-restriccion badge-atp">ATP</span>
   }
 </a>

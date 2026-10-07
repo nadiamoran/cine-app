@@ -80,7 +80,7 @@ Prioridad: **A** = imprescindible (lo pidió el cliente y define el sistema), **
 | RF-25 | Se bloquea la compra de películas +13 / +18 a usuarios menores de esa edad. | 12/02 | A |
 | RF-26 | Toda entrada de película con restricción debe **aclarar que debe asistir un adulto**. | 12/02 | A |
 | RF-27 | Al confirmar la compra se genera un **PDF** con los datos de la entrada y un **QR**. | 01/01 | A |
-| RF-28 | Se puede aplicar **cupón** y/o **puntos/crédito** como medio de pago junto con otros medios. | 30/01, 10/03 | A |
+| RF-28 | El **cupón** se aplica como **descuento** sobre la compra, y el **crédito** de la cuenta se puede usar como parte del pago, **junto con otros métodos de pago**. Los puntos no son un medio de pago: se canjean por recompensas (RF-41). | 30/01, 10/03 | A |
 | RF-29 | **Preventa:** la venta se abre 7 días antes del estreno con precio especial; pasada la fecha vuelve al precio normal. Configurable **por película**. | 08/03 | M |
 
 ### 2.5 Candy bar y combos
@@ -182,26 +182,31 @@ Prioridad: **A** = imprescindible (lo pidió el cliente y define el sistema), **
 
 ## 5. Modelo de datos
 
-Tablas que existen hoy en Supabase (creadas por `supabase/schema.sql` y las migraciones 001 a 019):
+Tablas que existen hoy en Supabase (creadas por `supabase/schema.sql` y las migraciones 001 a 026):
 
 | Tabla | Para qué |
 |---|---|
-| `profiles` | Datos del registro, rol (`cliente` / `empleado` / `administrador`) y puntos acumulados |
-| `peliculas` | Nombre, imagen, sinopsis, duración, géneros (`text[]`), restricción de edad, fecha de estreno, estado (`en_cartelera` / `proximamente` / `baja`) y ventas |
+| `profiles` | Datos del registro, rol (`cliente` / `empleado` / `administrador`), puntos acumulados y crédito disponible. El cliente solo puede modificar sus datos personales: rol, puntos y crédito los cambian funciones de la base |
+| `peliculas` | Nombre, imagen, sinopsis, duración, géneros (`text[]`), restricción de edad, fecha de estreno, estado (`en_cartelera` / `proximamente` / `baja`), ventas (entradas vendidas, las mantienen triggers) y descuento de preventa en pesos (vacío = sin preventa) |
 | `resenas` | Una reseña por usuario y película (1 a 5 estrellas + comentario) |
 | `alertas_estreno` | Usuarios que pidieron aviso de una película próxima |
 | `salas` | Nombre y si está habilitada para recibir funciones nuevas |
 | `butacas` | Fila, bloque, número y tipo (`estandar` / `vip` / `accesible`) de cada butaca de cada sala |
-| `funciones` | Película, sala asignada, inicio, fin, formato, idioma y precio |
-| `ordenes` | Compra: función, usuario (o email si es anónimo), total y estado |
-| `orden_butacas` | Cada butaca comprada; su id es el código del QR. Guarda cuándo se validó |
+| `funciones` | Película, sala asignada, inicio, fin, formato, idioma, precio estándar y precio VIP (copiados de `precios_entrada` según el formato) |
+| `precios_entrada` | Tabla de precios del cine: un precio estándar y uno VIP por formato (2D, 3D, 4D, 5D). La VIP siempre es mayor |
+| `ordenes` | Compra: función, usuario (o email si es anónimo), total, crédito usado, medio de pago (simulado), puntos ganados, puntos canjeados, estado y fecha de cancelación |
+| `orden_butacas` | Cada butaca comprada; su id es el código del QR. Guarda cuándo y quién la validó, si se pagó con puntos y si la compra se canceló (una butaca solo puede estar en una compra vigente por función) |
 | `cupones` | Cupón de bienvenida (primera compra) y cupones por edad mínima, con porcentaje configurable |
 | `categorias_producto`, `productos` | Candy bar: categorías y productos (con foto y estado activo / dado de baja) |
 | `combos`, `combo_productos` | Combos a precio fijo: entradas generales incluidas, productos, foto y estado |
-| `orden_productos` | Productos y combos de cada compra; guarda cuándo se retiraron en el candy bar |
+| `orden_productos` | Productos y combos de cada compra (los canjeados con puntos van a $0 con su recompensa); guarda cuándo se retiraron en el candy bar |
 | `butacas_vendidas` | Solo función + butaca de lo vendido (sin códigos ni compradores). La mantienen triggers y es la tabla que escucha Realtime |
+| `creditos_movimientos` | Historial del crédito de cada usuario: + por cancelación, − por uso en una compra |
+| `recompensas` | Lo que se paga con puntos y cuántos puntos cuesta: entrada general gratis (para cualquier formato o uno solo) o un producto del candy bar. La configura el admin; no se borran, se desactivan |
+| `puntos_movimientos` | Historial de puntos de cada usuario (es el historial de canjes del perfil): + por compra, − por canje, y los ajustes al cancelar |
+| `activity_log` | Log de actividad del personal: quién (nombre y rol), qué acción, detalle y fecha y hora. Lo llenan triggers de la base; solo el admin lo lee y nadie lo puede editar ni borrar desde la app |
 
-Diferencias con el modelo preliminar: los géneros quedaron como un arreglo dentro de `peliculas` (no hizo falta una tabla aparte), y la recurrencia no se guarda como `programaciones`: se generan todas las funciones juntas en el momento (ver S-11). Todavía no existen `recompensas`, `puntos_movimientos`, `creditos_movimientos` ni `activity_log`, porque corresponden a requerimientos pendientes (sección 9).
+Diferencias con el modelo preliminar: los géneros quedaron como un arreglo dentro de `peliculas` (no hizo falta una tabla aparte), y la recurrencia no se guarda como `programaciones`: se generan todas las funciones juntas en el momento (ver S-11).
 
 ---
 
@@ -216,7 +221,7 @@ Estos puntos son ambiguos o se contradicen en los mails. Dejarlos escritos sirve
 | S-3 | "Mapa de todo el cine" no tiene luz verde. | **Fuera de alcance**; opcional al final. | No |
 | S-4 | Alertas de "Próximamente": no se aclara el canal de notificación. | Notificación **dentro de la app** (y push de PWA si da el tiempo). | Sí |
 | S-5 | El cupón de bienvenida y los de mayores de 50: ¿se acumulan? | **No se acumulan**: una compra usa un solo cupón. | Sí |
-| S-6 | Puntos: ¿se ganan sobre el total, o solo sobre lo pagado en dinero? | Se ganan sobre lo **pagado en dinero** (no sobre puntos/crédito usados). | Sí |
+| S-6 | Puntos: ¿se ganan sobre el total, o solo sobre lo pagado en dinero? | Se ganan sobre lo **pagado en dinero** (no sobre el crédito usado). | Sí |
 | S-7 | Cancelación: ¿se devuelven puntos ganados? ¿y qué pasa con los combos/candy ya retirados? | Al cancelar se **revierten** los puntos ganados; no se puede cancelar si ya se validó el QR. | Sí |
 | S-8 | Menores de 13 en película +13 y menores de 18 en +18: ¿pueden ir con adulto? | No pueden **comprar**; sí pueden asistir acompañados de un adulto si lo compra el adulto. | Sí |
 | S-9 | "Más vendidas": ¿por entradas o por monto? | Por **cantidad de entradas** vendidas. | No |
@@ -266,7 +271,7 @@ Referencias: ✅ implementado · 🟡 parcial · ❌ pendiente.
 | RF-01 | ✅ | Alta de película con nombre, duración, imagen (Supabase Storage) y sinopsis. |
 | RF-02 | ✅ | Varios géneros por película, elegidos de los ya cargados (S-17). |
 | RF-03 | ✅ | Sin restricción / +13 / +18. |
-| RF-04 | 🟡 | La cartelera se ordena por `peliculas.ventas`, pero ese contador todavía no se actualiza al comprar y las 3 primeras no se destacan visualmente. |
+| RF-04 | ✅ | `peliculas.ventas` cuenta entradas vendidas (S-9) y lo mantienen triggers (migración 020): suma al comprar y resta al cancelar. La cartelera se ordena por ventas y las 3 primeras llevan la leyenda "Más vendida #1, #2, #3". |
 | RF-05 | ✅ | Buscador por nombre + filtro por género (contempla varios géneros). Los filtros quedan en la URL. |
 | RF-06 | ✅ | Sección Próximamente con las películas en estado "Próximamente", ordenadas por fecha de estreno. |
 | RF-07 | 🟡 | Se puede activar y cancelar la alerta; todavía no se envía la notificación. |
@@ -274,10 +279,10 @@ Referencias: ✅ implementado · 🟡 parcial · ❌ pendiente.
 | RF-09 | ✅ | 1 a 5 estrellas + comentario; solo quien ya vio la película (regla en la base). |
 | RF-10 | ✅ | Promedio en el detalle. |
 | RF-11 | ✅ | Reseñas visibles antes de comprar. |
-| RF-12 | ❌ | "Mis películas". |
+| RF-12 | ✅ | Sección "Mis películas" (solo clientes): una tarjeta por película vista, con póster, última fecha, cantidad de veces y su calificación en estrellas (o "Calificala"). "Vista" = compra confirmada de una función que ya empezó, igual que la regla para dejar reseña. |
 | RF-13 | ✅ | Las salas se crean con `crear_sala()`: 20 filas A–T, bloques 4/20/4. |
 | RF-14 | ✅ | Fila accesible 2/10/2 en lugar de J–K, con color propio en el mapa. |
-| RF-15 | 🟡 | Filas R–S–T VIP con marca visual. Falta el **precio mayor** y el aviso explícito antes de pagar. |
+| RF-15 | ✅ | Tabla de precios por formato con un monto en pesos para estándar y otro para VIP (pantalla Salas, migración 021); la VIP siempre cuesta más. Cada función toma los precios de su formato. En la compra se ve el precio de cada tipo, el total separado y un aviso destacado antes de confirmar; el PDF muestra el precio real de cada entrada. |
 | RF-16 | 🟡 | Pantalla Salas: alta de salas y habilitar / deshabilitar. La distribución de butacas es fija (la definió el cliente) y no se edita. |
 | RF-17 | ✅ | Alta, edición y baja de funciones (película, fecha, hora, formato, idioma, precio). |
 | RF-18 | ✅ | "Programar funciones": días de la semana + horarios + período, con vista previa (S-11). |
@@ -290,28 +295,29 @@ Referencias: ✅ implementado · 🟡 parcial · ❌ pendiente.
 | RF-25 | ✅ | Validado en Angular y en la base (`crear_orden`). |
 | RF-26 | ✅ | Aviso en el detalle y en el PDF ("debe ir acompañado de un adulto"). |
 | RF-27 | ✅ | PDF con una página y un QR por butaca. |
-| RF-28 | 🟡 | El cupón se aplica solo. Falta pagar con puntos o crédito. |
-| RF-29 | ❌ | Preventa. |
+| RF-28 | ✅ | El cupón se aplica solo, como descuento. El usuario registrado puede usar su crédito al pagar: cubre hasta el total y el resto se paga con un medio simulado (tarjeta de crédito, débito o Mercado Pago, S-2), que queda registrado en la orden. Los puntos se ganan solo sobre lo pagado con dinero (S-6). Migración 024. |
+| RF-29 | ✅ | Configurable por película desde Películas ("Tiene preventa" + descuento en pesos, con vista previa de precios; migración 023). La venta abre 7 días antes del estreno y hasta el día anterior se cobra con el descuento (estándar y VIP, todos los formatos); desde el estreno vuelve sola al precio normal. Lo calcula `crear_orden` según la fecha de compra. |
 | RF-30 | ✅ | Productos con categoría, foto, edición y baja. |
 | RF-31 | ✅ | Productos y combos en la misma compra. |
 | RF-32 | ✅ | Retiro del candy bar con el mismo código (`retirar_candy`). |
 | RF-33 | ✅ | Combos con entradas generales incluidas, productos, foto y precio fijo; destacados en la compra (S-13). |
 | RF-34 | ✅ | Registro con todos los datos pedidos. |
 | RF-35 | ✅ | Login / logout con Supabase Auth. |
-| RF-36 | 🟡 | Perfil con datos, puntos e historial de compras. Faltan historial de canjes y crédito. El administrador tiene un panel propio en lugar de este perfil. |
+| RF-36 | ✅ | Perfil con datos, puntos, crédito disponible, historial de canjes y puntos, movimientos de crédito e historial de compras (con botón para cancelar). El administrador y el empleado no tienen este perfil: van a su panel y a "Validar entrada". |
 | RF-37 | ✅ | Cupón "Bienvenida" 20 % en la primera compra. |
 | RF-38 | ✅ | Pantalla Cupones: cambiar porcentaje y activar / desactivar. |
 | RF-39 | ✅ | Cupones por edad mínima (configurable, ej. 50). |
 | RF-40 | ✅ | 1 punto por peso, solo usuarios registrados. |
-| RF-41 | ❌ | Canje de puntos. |
-| RF-42 | ❌ | Tabla de recompensas configurable. |
-| RF-43 | ✅ | No existe ninguna operación que mueva puntos entre usuarios. |
-| RF-44 a RF-47 | ❌ | Cancelación con crédito. |
-| RF-48 | ✅ | Pantalla "Validar entrada" (cámara o código) y "Retirar candy bar". |
+| RF-41 | ✅ | Se canjea al comprar (migración 025): el cliente registrado elige recompensas en la misma compra. La entrada canjeada es general (no VIP) y no se cobra; el producto va a $0 y se retira con el mismo QR. La base verifica y descuenta los puntos en la misma transacción (si no alcanzan, no se crea nada) y los registra en el historial. Si se cancela la compra, se devuelven. |
+| RF-42 | ✅ | Pantalla Recompensas del admin: entrada gratis (cualquier formato o uno solo, ej. "Entrada 2D" 500 pts) o producto del candy bar, con sus puntos editables y activar / desactivar. |
+| RF-43 | ✅ | No existe ninguna operación que mueva puntos entre usuarios: solo los suman las compras y los restan los canjes propios, siempre desde funciones de la base. |
+| RF-44 a RF-47 | ✅ | `cancelar_orden` (migración 024): solo el dueño registrado, hasta 2 h antes y si no se validó ninguna entrada ni se retiró el candy (S-7). Acredita el total como crédito (nunca dinero) con su movimiento, descuenta los puntos ganados, libera las butacas en tiempo real para volver a venderse y el QR deja de valer. |
+| RF-48 | ✅ | Pantalla "Validar entrada" (cámara o código) y "Retirar candy bar". La entrada solo se acepta desde 1 h antes del inicio hasta que termina la función (migración 022). El empleado entra directo a esta pantalla al iniciar sesión. |
 | RF-49 | ✅ | Ingreso manual del código. |
-| RF-50 | ✅ | Una vez validada o retirada, el código se rechaza. |
-| RF-51 | ✅ | Panel de administración con acceso a Películas, Funciones, Salas, Productos, Combos, Cupones y Validar entrada. |
-| RF-52 a RF-55 | ❌ | Reportes, exportación, gráficos y log de actividad (van en el panel de administración). |
+| RF-50 | ✅ | Una vez validada o retirada, el código se rechaza. También se rechaza el código de una compra cancelada, tanto para la entrada como para el candy (022). |
+| RF-51 | ✅ | Panel de administración con acceso a Películas, Funciones, Salas, Productos, Combos, Cupones, Recompensas, Actividad y Validar entrada. |
+| RF-52 a RF-54 | ❌ | Reporte de facturación, exportación a PDF y Excel, y gráficos (van en el panel de administración). |
+| RF-55 | ✅ | Pantalla Actividad del admin (migración 026): registra quién creó, editó o eliminó una función, quién modificó un precio (tabla de entradas, preventa, productos y combos, con antes → ahora) y quién validó una entrada o entregó el candy bar, con fecha y hora. Lo registran triggers de la base, así no se puede saltear desde el navegador; solo el admin lo lee y nadie lo puede editar ni borrar. Filtro por tipo. |
 
 ### 9.2 Requerimientos no funcionales
 
@@ -326,4 +332,4 @@ Referencias: ✅ implementado · 🟡 parcial · ❌ pendiente.
 | RNF-07 | ✅ | Firebase Hosting (https://cine-moran.web.app), GitHub y README. |
 | RNF-08 | ✅ | RLS y funciones `security definer` en la base. |
 | RNF-09 | ✅ | `unique(funcion_id, butaca_id)` y compra en una sola transacción. |
-| RNF-10 | 🟡 | Grillas que se adaptan al ancho; no hay ajustes específicos para celular. |
+| RNF-10 | ✅ | Diseño adaptado a celular (pantallas de hasta 760px): menú con botón ☰, menú lateral de admin que pasa arriba, mapa de butacas que se desplaza de costado sin desalinearse y con la letra de fila fija, dos películas por fila en la cartelera, listados de admin y tabla de precios que se acomodan, y "Validar entrada" con botones grandes a todo el ancho y la cámara a pantalla completa (es la que usa el empleado desde el celular). |

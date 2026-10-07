@@ -60,6 +60,119 @@ router-outlet + * {
   font-size: 0.85rem;
 }
 
+/* links "← Volver a ...": una píldora chica separada del contenido, en vez
+   de un link subrayado suelto */
+.link-volver {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-bottom: 1.5rem;
+  padding: 0.35rem 0.9rem 0.35rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-card);
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  text-decoration: none;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.link-volver span {
+  transition: transform 0.15s ease;
+}
+
+.link-volver:hover {
+  color: var(--dorado);
+  border-color: var(--dorado);
+}
+
+.link-volver:hover span {
+  transform: translateX(-3px);
+}
+
+/* ---------- marco de admin: menú lateral + pantalla ---------- */
+
+/* el layout ocupa más ancho que las demás páginas (le suma el menú) */
+app-admin-layout {
+  max-width: 1320px;
+}
+
+.admin-layout {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 2.5rem;
+  align-items: start;
+}
+
+/* las pantallas hijas no repiten el ancho ni el padding del contenedor
+   general (ese lo pone "router-outlet + *" para las páginas comunes) */
+.admin-contenido > router-outlet + * {
+  max-width: none;
+  margin: 0;
+  padding: 0;
+}
+
+.admin-menu {
+  position: sticky;
+  top: 5.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 1rem 0.75rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.admin-menu-grupo {
+  margin: 0.9rem 0.6rem 0.3rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.admin-menu a {
+  padding: 0.45rem 0.6rem;
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 0.9rem;
+  text-decoration: none;
+}
+
+.admin-menu a:hover {
+  background: rgba(217, 164, 65, 0.1);
+  color: var(--dorado);
+}
+
+/* sección actual (routerLinkActive) */
+.admin-menu a.activo {
+  background: rgba(217, 164, 65, 0.15);
+  color: var(--dorado);
+  font-weight: 600;
+  box-shadow: inset 3px 0 0 var(--dorado);
+}
+
+/* celular: el menú pasa arriba, con los links en fila */
+@media (max-width: 760px) {
+  .admin-layout {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .admin-menu {
+    position: static;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+  }
+
+  .admin-menu-grupo {
+    display: none;
+  }
+}
+
 /* ---------- navegación ---------- */
 
 nav {
@@ -109,6 +222,60 @@ nav a {
 
 nav a:hover {
   color: var(--dorado);
+}
+
+/* link de la página actual (routerLinkActive) */
+nav a.activo {
+  color: var(--dorado);
+  box-shadow: inset 0 -2px 0 var(--dorado);
+  padding-bottom: 0.2rem;
+}
+
+/* botón ☰: solo en pantallas chicas */
+.btn-menu {
+  display: none;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 1.2rem;
+  line-height: 1;
+  padding: 0.35rem 0.6rem;
+  cursor: pointer;
+}
+
+@media (max-width: 760px) {
+  nav {
+    flex-wrap: wrap;
+  }
+
+  .btn-menu {
+    display: block;
+  }
+
+  /* cerrado: solo marca + ☰. Abierto: los links en columna debajo */
+  .nav-links,
+  .nav-sesion {
+    display: none;
+    width: 100%;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.9rem;
+  }
+
+  .nav-abierto .nav-links,
+  .nav-abierto .nav-sesion {
+    display: flex;
+  }
+
+  .nav-abierto .nav-sesion {
+    border-top: 1px solid var(--border);
+    padding-top: 0.9rem;
+  }
+
+  nav a {
+    font-size: 1rem;
+  }
 }
 
 .btn-primario,
@@ -178,6 +345,91 @@ textarea {
   min-height: 5rem;
 }
 
+/* ---------- desplegables (select) ----------
+   Sin esto, la lista que se abre la dibuja el sistema operativo (blanca o
+   gris con el azul de Windows) y no combina con el tema.
+   - color-scheme: dark -> en cualquier navegador la lista nativa sale oscura
+   - appearance: base-select -> en Chrome / Edge se puede estilizar la lista
+     completa (fondo, hover dorado, flecha). Los navegadores que no lo
+     soportan ignoran ese bloque y muestran el desplegable de siempre. */
+select {
+  color-scheme: dark;
+  cursor: pointer;
+}
+
+select:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+option {
+  background: var(--bg-card);
+  color: var(--text);
+}
+
+@supports (appearance: base-select) {
+  select,
+  ::picker(select) {
+    appearance: base-select;
+  }
+
+  select {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  /* flecha dorada; gira cuando la lista está abierta */
+  select::picker-icon {
+    color: var(--dorado);
+    transition: rotate 0.15s ease;
+  }
+
+  select:open::picker-icon {
+    rotate: 180deg;
+  }
+
+  /* la lista que se abre */
+  ::picker(select) {
+    margin-top: 0.3rem;
+    padding: 0.3rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45);
+  }
+
+  option {
+    padding: 0.45rem 0.7rem;
+    border-radius: 6px;
+    background: transparent;
+    cursor: pointer;
+  }
+
+  option:hover,
+  option:focus-visible {
+    background: rgba(217, 164, 65, 0.15);
+    color: var(--dorado);
+    outline: none;
+  }
+
+  /* la opción elegida, con su tilde en dorado */
+  option:checked {
+    color: var(--dorado);
+    font-weight: 600;
+  }
+
+  option::checkmark {
+    color: var(--dorado);
+  }
+
+  option:disabled {
+    color: var(--text-muted);
+    cursor: default;
+  }
+}
+
 button {
   padding: 0.65rem 1.1rem;
   font-size: 1rem;
@@ -231,6 +483,7 @@ button:disabled {
 }
 
 .card-pelicula {
+  position: relative;
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -270,6 +523,102 @@ button:disabled {
   font-size: 0.82rem;
 }
 
+.badge-mas-vendida {
+  position: absolute;
+  top: 0.6rem;
+  left: 0.6rem;
+  padding: 0.2rem 0.55rem;
+  background: var(--dorado);
+  color: var(--bg);
+  font-family: var(--fuente-marquesina);
+  font-size: 0.95rem;
+  letter-spacing: 0.04em;
+  border-radius: 4px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.45);
+}
+
+/* pie de las tarjetas de Próximamente: los botones quedan abajo, con
+   margen y el mismo ancho (aunque el título ocupe más o menos líneas) */
+.card-acciones {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: auto;
+  padding: 0.75rem;
+}
+
+.card-acciones > a,
+.card-acciones > button {
+  width: 100%;
+  text-align: center;
+}
+
+/* los links con forma de botón, del mismo tamaño que "Avisame" */
+.card-acciones > a {
+  padding: 0.65rem 1.1rem;
+  font-size: 1rem;
+}
+
+.card-pelicula .texto-preventa {
+  color: var(--verde);
+  font-weight: 600;
+}
+
+/* mensaje de pantalla sin datos (ej. "Mis películas" vacío): recuadro
+   centrado con una explicación y un botón para seguir */
+.estado-vacio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  max-width: 560px;
+  margin: 2rem auto;
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  background: var(--bg-card);
+}
+
+.estado-vacio h2 {
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.estado-vacio p {
+  margin: 0 0 0.5rem;
+  color: var(--text-muted);
+}
+
+.estado-vacio .btn-primario {
+  padding: 0.6rem 1.4rem;
+  font-size: 0.95rem;
+}
+
+/* "Mis películas" (RF-12): estrellas de la calificación propia */
+.card-pelicula .calificacion {
+  margin-bottom: 0.75rem;
+  font-size: 1rem;
+  letter-spacing: 0.1em;
+  color: var(--border);
+}
+
+.card-pelicula .calificacion .estrella-llena {
+  color: var(--dorado);
+}
+
+.card-pelicula .sin-calificar {
+  margin-bottom: 0.75rem;
+  color: var(--dorado);
+  font-weight: 600;
+}
+
+/* ATP (apta para todo público): mismo recuadro que +13 / +18, en verde */
+.badge-restriccion.badge-atp {
+  background: var(--verde);
+}
+
 .badge-restriccion {
   display: inline-block;
   align-self: flex-start;
@@ -305,6 +654,17 @@ button:disabled {
 /* ---------- funciones / horarios ---------- */
 
 .funciones .funcion,
+/* formulario para dejar reseña: más ancho que los formularios comunes
+   (400px) y alineado con la lista de reseñas, con más lugar para escribir */
+.resenas form {
+  max-width: 640px;
+  margin: 1rem 0 1.5rem;
+}
+
+.resenas textarea {
+  min-height: 8rem;
+}
+
 .resenas .resena {
   background: var(--bg-card);
   border: 1px solid var(--border);
@@ -353,6 +713,17 @@ button:disabled {
   display: flex;
   gap: 0.3rem;
   align-items: center;
+  /* la fila nunca se aprieta: si no entra, el mapa se desplaza de costado.
+     Sin esto, en pantallas angostas el navegador achicaba distinto cada
+     fila (según el ancho de su letra: I es angosta, M es ancha) y las
+     butacas quedaban desalineadas */
+  min-width: max-content;
+}
+
+.fila-butacas > *,
+.bloques-fila > *,
+.bloque-butacas > * {
+  flex-shrink: 0;
 }
 
 /* Donde estaba la fila K (el cliente sacó J y K y puso una sola fila
@@ -394,6 +765,12 @@ button:disabled {
   font-weight: 700;
   color: var(--text-muted);
   text-align: center;
+  /* al desplazar el mapa de costado (celular), la letra queda fija a la
+     izquierda para saber siempre en qué fila estás */
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--bg);
 }
 
 .butaca {
@@ -466,12 +843,98 @@ button:disabled {
   padding: 1.25rem;
 }
 
+.aviso-vip {
+  margin: 0;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--dorado);
+  border-left-width: 4px;
+  border-radius: 6px;
+  background: rgba(217, 164, 65, 0.12);
+  color: var(--text);
+  font-size: 0.9rem;
+}
+
+/* ---------- preventa (RF-29) ---------- */
+
+.aviso-preventa {
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--verde);
+  border-left-width: 4px;
+  border-radius: 6px;
+  background: rgba(63, 166, 106, 0.12);
+  color: var(--text);
+  font-size: 0.9rem;
+}
+
+.texto-preventa {
+  color: var(--verde);
+  font-weight: 600;
+}
+
+.precio-tachado {
+  margin-left: 0.25rem;
+  color: var(--text-muted);
+  text-decoration: line-through;
+  font-size: 0.85em;
+}
+
+.bloque-preventa {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  padding: 0.75rem 1rem 1rem;
+}
+
+.bloque-preventa legend {
+  padding: 0 0.4rem;
+  color: var(--text-muted);
+}
+
+.check-preventa {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.check-preventa input {
+  width: auto;
+}
+
 .resumen-compra form {
   box-shadow: none;
   border: none;
   padding: 0;
   margin: 0;
   max-width: none;
+}
+
+.tabla-precios {
+  border-collapse: collapse;
+  margin: 1rem 0;
+}
+
+.tabla-precios th,
+.tabla-precios td {
+  padding: 0.4rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+
+.tabla-precios th {
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.tabla-precios input {
+  width: 8rem;
+}
+
+.tabla-precios small {
+  display: block;
 }
 
 .acciones-validacion {
@@ -673,8 +1136,20 @@ button:disabled {
   width: 100%;
 }
 
-.btn-nueva-pelicula {
+/* encabezado de las pantallas de admin: título a la izquierda y el botón
+   "+ Nuevo..." a la derecha, en la misma línea. En pantallas angostas el
+   botón baja debajo del título (flex-wrap) */
+.encabezado-admin {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
   margin-bottom: 1.5rem;
+}
+
+.encabezado-admin h1 {
+  margin: 0;
 }
 
 .badge-estado {
@@ -903,4 +1378,92 @@ button:disabled {
 .tarjeta-panel-detalle {
   font-size: 0.85rem;
   color: var(--text-muted);
+}
+
+/* ---------- celular (RNF-10) ----------
+   Ajustes para pantallas de hasta 760px de ancho. El menú (☰), el menú
+   lateral de admin y el mapa de butacas tienen sus propios ajustes arriba. */
+@media (max-width: 760px) {
+  /* menos margen a los costados: en un celular cada píxel cuenta */
+  router-outlet + * {
+    padding: 1.25rem 1rem 3rem;
+  }
+
+  h1 {
+    font-size: 2rem;
+  }
+
+  /* cartelera / próximamente / mis películas: dos tarjetas por fila */
+  .grid-peliculas {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.9rem;
+  }
+
+  /* buscador y filtro de género, uno debajo del otro */
+  .filtros {
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  /* validar entrada (lo usa el empleado desde el celular): botones grandes,
+     a todo el ancho, y la cámara ocupa toda la pantalla */
+  .acciones-validacion {
+    flex-direction: column;
+  }
+
+  .acciones-validacion button,
+  .validacion-camara > button {
+    width: 100%;
+    padding: 0.9rem;
+  }
+
+  .validacion-camara video {
+    max-width: 100%;
+  }
+
+  /* listados del admin: cada fila se acomoda en varias líneas */
+  .cupon-item {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .cupon-item > div:first-child {
+    flex-basis: 100%;
+  }
+
+  .cupon-item .estado-pelicula,
+  .cupon-item label {
+    width: auto;
+    flex: 1;
+  }
+
+  /* tabla de precios de Salas: campos más angostos para que entren */
+  .tabla-precios th,
+  .tabla-precios td {
+    padding: 0.4rem 0.4rem;
+  }
+
+  .tabla-precios input {
+    width: 5.5rem;
+  }
+
+  /* perfil: las tarjetas de puntos y crédito se acomodan si no entran */
+  .resumen-perfil {
+    flex-wrap: wrap;
+  }
+
+  .tarjeta-metrica {
+    flex: 1;
+  }
+
+  /* compra: el resumen ocupa todo el ancho */
+  .resumen-compra {
+    max-width: none;
+  }
+
+  /* detalle de película: el póster ocupa el ancho disponible */
+  .detalle-pelicula img {
+    width: 100%;
+    max-width: 320px;
+  }
 }

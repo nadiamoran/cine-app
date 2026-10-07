@@ -25,4 +25,5 @@ export interface Profile {
   diasVacaciones: number;
   rol: 'cliente' | 'empleado' | 'administrador';
   puntos: number;
+  credito: number; // RF-46: crédito por cancelaciones, se usa al pagar
 }

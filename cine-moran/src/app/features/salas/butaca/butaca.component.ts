@@ -12,11 +12,11 @@ import { ButacaTipoDirective } from '../../../shared/directives/butaca-tipo.dire
   templateUrl: './butaca.component.html',
 })
 export class ButacaComponent {
-  butaca = input.required<Butaca>();
-  seleccionada = input(false);
+  butaca = input.required<Butaca>(); // dato obligatorio que manda el padre
+  seleccionada = input(false); // dato opcional, por defecto false
   ocupada = input(false);
 
-  seleccionar = output<Butaca>();
+  seleccionar = output<Butaca>();  // evento que el hijo emite
 
   onClick() {
     if (this.ocupada()) return;

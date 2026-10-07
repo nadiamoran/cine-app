@@ -1,0 +1,29 @@
+<h1>Actividad</h1>
+
+<p class="detalle-seleccion">
+  Quién creó, editó o eliminó funciones, quién modificó precios y quién validó entradas o entregó
+  el candy bar. Lo registra la base automáticamente; no se puede editar ni borrar.
+</p>
+
+<div class="filtros">
+  <select [value]="tipoElegido()" (change)="tipoElegido.set($any($event.target).value)">
+    @for (tipo of tipos; track tipo.valor) {
+      <option [value]="tipo.valor">{{ tipo.etiqueta }}</option>
+    }
+  </select>
+  <button type="button" class="btn-secundario" [disabled]="cargando()" (click)="recargar()">Actualizar</button>
+</div>
+
+@if (cargando() && registros().length === 0) {
+  <p>Cargando...</p>
+} @else if (registrosFiltrados().length === 0) {
+  <p>Todavía no hay actividad registrada.</p>
+} @else {
+  @for (registro of registrosFiltrados(); track registro.id) {
+    <article class="compra-historial">
+      <span>{{ registro.createdAt | date: 'dd/MM/yyyy HH:mm' }} · {{ registro.usuario }}</span>
+      <strong>{{ registro.accion }}</strong>
+      <span>{{ registro.detalle }}</span>
+    </article>
+  }
+}

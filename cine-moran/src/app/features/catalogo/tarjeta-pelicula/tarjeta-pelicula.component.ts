@@ -14,4 +14,7 @@ import { DuracionPipe } from '../../../shared/pipes/duracion.pipe';
 })
 export class TarjetaPeliculaComponent {
   pelicula = input.required<Pelicula>();
+  // RF-04: 1, 2 o 3 si está entre las más vendidas; null si no (o si la
+  // pantalla que usa la tarjeta no lo informa)
+  puestoVentas = input<number | null>(null);
 }

@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { SupabaseService } from '../../core/supabase.service';
-import { Funcion, Formato, Idioma } from './funcion.model';
+import { Funcion, Formato, Idioma, PrecioEntrada } from './funcion.model';
 
 @Injectable({ providedIn: 'root' })
 export class FuncionesService {
@@ -29,6 +29,7 @@ export class FuncionesService {
       formato: data.formato,
       idioma: data.idioma,
       precio: data.precio,
+      precioVip: data.precio_vip,
     };
   }
 
@@ -55,24 +56,24 @@ export class FuncionesService {
       formato: row.formato,
       idioma: row.idioma,
       precio: row.precio,
+      precioVip: row.precio_vip,
     }));
   }
 
   // La sala la elige la base de datos (funcion asignar_funcion): busca la
   // primera sala libre respetando los 30 min de margen entre funciones.
+  // El precio también lo pone la base, según el formato (migración 021).
   async crear(datos: {
     peliculaId: string;
     inicio: string;
     formato: Formato;
     idioma: Idioma;
-    precio: number;
   }): Promise<{ error: string | null }> {
     const { error } = await this.supabase.rpc('asignar_funcion', {
       p_pelicula_id: datos.peliculaId,
       p_inicio: datos.inicio,
       p_formato: datos.formato,
       p_idioma: datos.idioma,
-      p_precio: datos.precio,
     });
 
     return { error: error?.message ?? null };
@@ -101,6 +102,7 @@ export class FuncionesService {
       formato: row.formato,
       idioma: row.idioma,
       precio: row.precio,
+      precioVip: row.precio_vip,
       nombrePelicula: row.peliculas?.nombre ?? '',
     }));
   }
@@ -114,7 +116,6 @@ export class FuncionesService {
       inicio: string;
       formato: Formato;
       idioma: Idioma;
-      precio: number;
     },
   ): Promise<{ error: string | null }> {
     const { error } = await this.supabase.rpc('editar_funcion', {
@@ -123,7 +124,6 @@ export class FuncionesService {
       p_inicio: datos.inicio,
       p_formato: datos.formato,
       p_idioma: datos.idioma,
-      p_precio: datos.precio,
     });
 
     return { error: error?.message ?? null };
@@ -140,7 +140,6 @@ export class FuncionesService {
       hasta: string;
       formato: Formato;
       idioma: Idioma;
-      precio: number;
     },
     confirmar: boolean,
   ): Promise<{ resultado: { inicio: string; salaNombre: string | null }[]; error: string | null }> {
@@ -152,12 +151,32 @@ export class FuncionesService {
       p_hasta: datos.hasta,
       p_formato: datos.formato,
       p_idioma: datos.idioma,
-      p_precio: datos.precio,
       p_confirmar: confirmar,
     });
 
     if (error) return { resultado: [], error: error.message };
     return { resultado: data ?? [], error: null };
+  }
+
+  // RF-15: tabla de precios por formato (estándar y VIP)
+  async getPrecios(): Promise<PrecioEntrada[]> {
+    const { data, error } = await this.supabase
+      .from('precios_entrada')
+      .select('*')
+      .order('formato', { ascending: true });
+
+    if (error || !data) return [];
+    return data.map((row: any) => ({
+      formato: row.formato,
+      precio: row.precio,
+      precioVip: row.precio_vip,
+    }));
+  }
+
+  // guarda la tabla y la base actualiza las funciones que todavía no empezaron
+  async guardarPrecios(precios: PrecioEntrada[]): Promise<{ error: string | null }> {
+    const { error } = await this.supabase.rpc('guardar_precios_entrada', { p_precios: precios });
+    return { error: error?.message ?? null };
   }
 
   async eliminar(id: string): Promise<{ error: string | null }> {

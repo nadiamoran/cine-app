@@ -9,7 +9,7 @@ import { Sala, Butaca } from '../../salas/sala.model';
 import { PeliculasService } from '../../catalogo/peliculas.service';
 import { Pelicula } from '../../catalogo/pelicula.model';
 import { OrdenesService } from '../ordenes.service';
-import { OrdenConButacas } from '../orden.model';
+import { METODOS_PAGO, MetodoPago, OrdenConButacas } from '../orden.model';
 import { TicketsService } from '../tickets.service';
 import { AuthService } from '../../../core/auth/auth.service';
 import { ButacaComponent } from '../../salas/butaca/butaca.component';
@@ -18,6 +18,9 @@ import { ComponentePuedeSalir } from '../../../core/guards/confirmar-salida.guar
 import { CandyBarService } from '../../candy-bar/candy-bar.service';
 import { Categoria, Producto, Combo } from '../../candy-bar/producto.model';
 import { detalleCombo } from '../../candy-bar/combo.utils';
+import { infoPreventa, precioVigente } from '../../catalogo/preventa.utils';
+import { RecompensasService } from '../../puntos/recompensas.service';
+import { Recompensa } from '../../puntos/recompensa.model';
 
 @Component({
   selector: 'app-seleccion-butacas',
@@ -74,11 +77,82 @@ export class SeleccionButacasComponent implements OnInit, ComponentePuedeSalir {
     return suma;
   });
 
-  // los combos cubren entradas generales, no VIP
-  butacasGeneralesSeleccionadas = computed(() => {
-    const ids = this.seleccionadas();
-    return this.butacas().filter((b) => ids.has(b.id) && b.tipo !== 'vip').length;
+  // RF-29: si la película está en preventa, estándar y VIP llevan el descuento
+  // (mismo cálculo que crear_orden; el precio que se cobra lo decide la base)
+  preventa = computed(() => {
+    const pelicula = this.pelicula();
+    return pelicula ? infoPreventa(pelicula) : null;
   });
+
+  precioEstandar = computed(() => {
+    const precio = this.funcion()?.precio ?? 0;
+    const preventa = this.preventa();
+    return preventa ? precioVigente(precio, preventa) : precio;
+  });
+
+  precioVip = computed(() => {
+    const precio = this.funcion()?.precioVip ?? 0;
+    const preventa = this.preventa();
+    return preventa ? precioVigente(precio, preventa) : precio;
+  });
+
+  // RF-15: las VIP tienen su propio precio (funcion.precioVip)
+  butacasVipSeleccionadas = computed(() => {
+    const ids = this.seleccionadas();
+    return this.butacas().filter((b) => ids.has(b.id) && b.tipo === 'vip').length;
+  });
+
+  // estándar + accesibles: pagan el precio común. Los combos cubren solo estas
+  butacasGeneralesSeleccionadas = computed(
+    () => this.cantidadSeleccionada() - this.butacasVipSeleccionadas(),
+  );
+
+  // entradas generales que se cobran sueltas (las demás vienen en un combo
+  // o se pagan con puntos)
+  generalesACobrar = computed(() =>
+    Math.max(
+      this.butacasGeneralesSeleccionadas() - this.entradasEnCombos() - this.entradasCanjeadas(),
+      0,
+    ),
+  );
+
+  // ---- RF-41: canje de puntos (solo usuarios registrados) ----
+  recompensas = signal<Recompensa[]>([]);
+  cantidadesRecompensas = signal<Map<string, number>>(new Map());
+
+  puntosDisponibles = computed(() => this.authService.currentUser()?.puntos ?? 0);
+
+  // las entradas limitadas a un formato solo aparecen en funciones de ese formato
+  recompensasAplicables = computed(() => {
+    const formato = this.funcion()?.formato;
+    return this.recompensas().filter((r) => r.tipo === 'producto' || !r.formato || r.formato === formato);
+  });
+
+  puntosAUsar = computed(() => {
+    let suma = 0;
+    for (const [id, cantidad] of this.cantidadesRecompensas()) {
+      suma += (this.recompensas().find((r) => r.id === id)?.puntos ?? 0) * cantidad;
+    }
+    return suma;
+  });
+
+  faltanPuntos = computed(() => this.puntosAUsar() > this.puntosDisponibles());
+
+  entradasCanjeadas = computed(() => {
+    let suma = 0;
+    for (const [id, cantidad] of this.cantidadesRecompensas()) {
+      if (this.recompensas().find((r) => r.id === id)?.tipo === 'entrada') suma += cantidad;
+    }
+    return suma;
+  });
+
+  cantidadRecompensa(id: string): number {
+    return this.cantidadesRecompensas().get(id) ?? 0;
+  }
+
+  onCambiarCantidadRecompensa(id: string, valor: string) {
+    this.cantidadesRecompensas.set(this.actualizarCantidad(this.cantidadesRecompensas(), id, valor));
+  }
 
   entradasEnCombos = computed(() => {
     let suma = 0;
@@ -88,17 +162,37 @@ export class SeleccionButacasComponent implements OnInit, ComponentePuedeSalir {
     return suma;
   });
 
+  // combos y entradas canjeadas cubren solo butacas generales (no VIP)
   faltanButacasParaCombos = computed(
-    () => this.entradasEnCombos() > this.butacasGeneralesSeleccionadas(),
+    () => this.entradasEnCombos() + this.entradasCanjeadas() > this.butacasGeneralesSeleccionadas(),
   );
 
   // las entradas que trae un combo no se cobran sueltas: se paga el precio del combo
   // (el total real lo vuelve a calcular crear_orden en la base)
   total = computed(
     () =>
-      (this.cantidadSeleccionada() - this.entradasEnCombos()) * (this.funcion()?.precio ?? 0) +
+      this.generalesACobrar() * this.precioEstandar() +
+      this.butacasVipSeleccionadas() * this.precioVip() +
       this.totalCandy(),
   );
+
+  // ---- RF-28 / S-2: pago (simulado) y uso del crédito ----
+  readonly metodosPago = METODOS_PAGO;
+  usarCredito = signal(false);
+  metodoPago = signal<MetodoPago | null>(null);
+
+  creditoDisponible = computed(() => this.authService.currentUser()?.credito ?? 0);
+
+  // estimación: el cupón lo aplica la base, así que lo real puede ser menor
+  creditoAAplicar = computed(() =>
+    this.usarCredito() ? Math.min(this.creditoDisponible(), this.total()) : 0,
+  );
+
+  aPagar = computed(() => this.total() - this.creditoAAplicar());
+
+  etiquetaMetodo(metodo: string | null): string | null {
+    return this.metodosPago.find((m) => m.valor === metodo)?.etiqueta ?? null;
+  }
 
   // detalle de qué butacas eligió (ej: "J3, J4, R5"), para que confirme antes
   // de pagar exactamente dónde se va a sentar, no solo cuántas entradas son
@@ -107,7 +201,7 @@ export class SeleccionButacasComponent implements OnInit, ComponentePuedeSalir {
     return this.butacas()
       .filter((b) => ids.has(b.id))
       .sort((a, b) => a.fila.localeCompare(b.fila) || a.numero - b.numero)
-      .map((b) => `${b.fila}${b.numero}`)
+      .map((b) => `${b.fila}${b.numero}${b.tipo === 'vip' ? ' (VIP)' : ''}`)
       .join(', ');
   });
 
@@ -147,6 +241,7 @@ export class SeleccionButacasComponent implements OnInit, ComponentePuedeSalir {
     private ordenesService: OrdenesService,
     private ticketsService: TicketsService,
     private candyBarService: CandyBarService,
+    private recompensasService: RecompensasService,
     protected authService: AuthService,
     private destroyRef: DestroyRef,
   ) {}
@@ -154,13 +249,17 @@ export class SeleccionButacasComponent implements OnInit, ComponentePuedeSalir {
   async ngOnInit() {
     this.cargando.set(true);
     const funcionId = this.route.snapshot.paramMap.get('id')!;
+    // con la sesión ya restaurada (las recompensas dependen del usuario)
+    await this.authService.sesionLista;
 
-    const [funcion, ocupadas, categorias, productos, combos] = await Promise.all([
+    const [funcion, ocupadas, categorias, productos, combos, recompensas] = await Promise.all([
       this.funcionesService.getById(funcionId),
       this.ordenesService.getButacasOcupadas(funcionId),
       this.candyBarService.getCategorias(),
       this.candyBarService.getProductosActivos(),
       this.candyBarService.getCombosActivos(),
+      // los anónimos no tienen puntos: no hace falta traerlas
+      this.authService.currentUser() ? this.recompensasService.getActivas() : Promise.resolve([]),
     ]);
 
     this.funcion.set(funcion);
@@ -168,6 +267,7 @@ export class SeleccionButacasComponent implements OnInit, ComponentePuedeSalir {
     this.categorias.set(categorias);
     this.productos.set(productos);
     this.combos.set(combos);
+    this.recompensas.set(recompensas);
 
     if (funcion) {
       const [pelicula, sala, butacas] = await Promise.all([
@@ -299,6 +399,18 @@ export class SeleccionButacasComponent implements OnInit, ComponentePuedeSalir {
       return;
     }
 
+    if (this.faltanPuntos()) {
+      this.errorMsg.set('No te alcanzan los puntos para ese canje.');
+      return;
+    }
+
+    // si el crédito no cubre todo, hace falta un medio de pago (la base
+    // lo vuelve a exigir)
+    if (this.aPagar() > 0 && !this.metodoPago()) {
+      this.errorMsg.set('Elegí un medio de pago.');
+      return;
+    }
+
     this.comprando.set(true);
     const { resultado, error } = await this.ordenesService.crear(
       this.funcion()!.id,
@@ -306,6 +418,9 @@ export class SeleccionButacasComponent implements OnInit, ComponentePuedeSalir {
       email,
       this.idsRepetidos(this.cantidadesProductos()),
       this.idsRepetidos(this.cantidadesCombos()),
+      this.usarCredito(),
+      this.metodoPago(),
+      this.idsRepetidos(this.cantidadesRecompensas()),
     );
     this.comprando.set(false);
 
@@ -323,7 +438,10 @@ export class SeleccionButacasComponent implements OnInit, ComponentePuedeSalir {
     this.seleccionadas.set(new Set());
     this.cantidadesProductos.set(new Map());
     this.cantidadesCombos.set(new Map());
-    await this.authService.recargarPerfil(); // para que se vean los puntos ganados
+    this.cantidadesRecompensas.set(new Map());
+    this.usarCredito.set(false);
+    this.metodoPago.set(null);
+    await this.authService.recargarPerfil(); // para que se vean los puntos ganados y el crédito
   }
 
   async onDescargarPdf() {

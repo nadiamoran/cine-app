@@ -1,7 +1,9 @@
 import { Component, OnInit, signal } from '@angular/core';
-import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormArray, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { SalasService } from '../../salas/salas.service';
 import { SalaConButacas } from '../../salas/sala.model';
+import { FuncionesService } from '../../funciones/funciones.service';
+import { Formato, PrecioEntrada } from '../../funciones/funcion.model';
 
 @Component({
   selector: 'app-gestionar-salas',
@@ -27,10 +29,79 @@ export class GestionarSalasComponent implements OnInit {
     }),
   });
 
-  constructor(private salasService: SalasService) {}
+  // ---- RF-15: precios de entradas por formato (estándar y VIP) ----
+  // una fila del FormArray por formato; la cantidad de filas la define la
+  // tabla precios_entrada de la base
+  preciosForm = new FormArray<
+    FormGroup<{ formato: FormControl<Formato>; precio: FormControl<number>; precioVip: FormControl<number> }>
+  >([]);
+  // el FormArray no es un signal: este avisa a la vista cuando ya se armó
+  preciosCargados = signal(false);
+  guardandoPrecios = signal(false);
+  errorPrecios = signal<string | null>(null);
+  exitoPrecios = signal<string | null>(null);
+
+  constructor(
+    private salasService: SalasService,
+    private funcionesService: FuncionesService,
+  ) {}
 
   async ngOnInit() {
-    await this.recargar();
+    await Promise.all([this.recargar(), this.cargarPrecios()]);
+  }
+
+  private async cargarPrecios() {
+    const precios = await this.funcionesService.getPrecios();
+    this.preciosForm.clear();
+    for (const p of precios) {
+      this.preciosForm.push(
+        new FormGroup({
+          formato: new FormControl<Formato>(p.formato, { nonNullable: true }),
+          precio: new FormControl(p.precio, {
+            nonNullable: true,
+            validators: [Validators.required, Validators.min(0)],
+          }),
+          precioVip: new FormControl(p.precioVip, {
+            nonNullable: true,
+            validators: [Validators.required, Validators.min(0)],
+          }),
+        }),
+      );
+    }
+    this.preciosCargados.set(true);
+  }
+
+  // la VIP tiene que costar más que la estándar (la base lo vuelve a validar)
+  vipNoEsMayor(index: number): boolean {
+    const { precio, precioVip } = this.preciosForm.at(index).getRawValue();
+    return precioVip <= precio;
+  }
+
+  async onGuardarPrecios() {
+    this.errorPrecios.set(null);
+    this.exitoPrecios.set(null);
+
+    if (this.preciosForm.invalid) {
+      this.preciosForm.markAllAsTouched();
+      this.errorPrecios.set('Completá todos los precios.');
+      return;
+    }
+    if (this.preciosForm.controls.some((_, i) => this.vipNoEsMayor(i))) {
+      this.errorPrecios.set('La butaca VIP tiene que costar más que la estándar en todos los formatos.');
+      return;
+    }
+
+    this.guardandoPrecios.set(true);
+    const precios: PrecioEntrada[] = this.preciosForm.getRawValue();
+    const { error } = await this.funcionesService.guardarPrecios(precios);
+    this.guardandoPrecios.set(false);
+
+    if (error) {
+      this.errorPrecios.set(error);
+      return;
+    }
+    this.exitoPrecios.set('Precios guardados. Se actualizaron las funciones que todavía no empezaron.');
+    await this.cargarPrecios();
   }
 
   private async recargar() {

@@ -56,6 +56,8 @@ export class LoginComponent {
       return;
     }
 
-    this.router.navigate(['/']);
+    // el empleado solo valida entradas: arranca directo en esa pantalla
+    const rol = this.authService.currentUser()?.rol;
+    this.router.navigate([rol === 'empleado' ? '/empleado/validar' : '/']);
   }
 }
