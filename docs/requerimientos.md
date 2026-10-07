@@ -151,7 +151,7 @@ Prioridad: **A** = imprescindible (lo pidió el cliente y define el sistema), **
 | ID | Requerimiento | Fuente |
 |---|---|---|
 | RNF-01 | **Usabilidad:** interfaces fáciles de navegar y entender, tanto para clientes como para empleados. | 28/02 |
-| RNF-02 | **Fechas y horas:** usar selectores simples (calendario, selector de hora) en vez de campos que hagan perder tiempo; **evitar el scroll excesivo**. | 28/02 |
+| RNF-02 | **Fechas y horas:** el cliente **no quiere el calendario desplegable** (manda una imagen como ejemplo de lo que no quiere): pide una forma de cargar fechas y horas que no haga perder tiempo buscando y **sin scroll excesivo**. | 28/02 |
 | RNF-03 | **Estilo visual único y producido** (no un template genérico). | Consigna |
 | RNF-04 | Aplicación **Angular** con buenas prácticas y las técnicas vistas en clase. | Consigna |
 | RNF-05 | **Integración con Supabase** (base de datos, auth, storage y realtime). | Consigna |
@@ -235,6 +235,7 @@ Estos puntos son ambiguos o se contradicen en los mails. Dejarlos escritos sirve
 | S-15 | ¿Qué pasa al deshabilitar una sala? | No recibe **funciones nuevas**; las que ya tenía programadas se mantienen. | No |
 | S-16 | Dar de baja un producto o un combo. | No se borra (las compras viejas lo referencian): queda **inactivo**, no se vende y no se puede sumar a combos nuevos. | No |
 | S-17 | El admin pidió elegir el género "de los ya cargados". | Los géneros disponibles se toman de las películas existentes; si hace falta uno nuevo, se agrega desde el mismo formulario. | No |
+| S-18 | El mail del 06/02 pide que el admin controle "la distribución de las butacas", pero el del 01/01 dice que la forma de las salas "es siempre la misma" (20 filas, bloques de 4, 20 y 4), y los cambios posteriores (fila accesible el 12/02, filas VIP el 10/03) se pidieron para **todas** las salas a la vez. | La distribución es una **regla del negocio** y no un dato de cada sala: cada sala nueva se arma sola con esa forma (`crear_sala`). El admin controla las salas creándolas y habilitándolas / deshabilitándolas, pero no mueve butacas a mano. Así ninguna sala queda distinta de lo que definió el cliente, no se rompen las filas accesibles ni las VIP, y no desaparecen butacas con entradas ya vendidas. | No |
 
 ---
 
@@ -285,7 +286,7 @@ Referencias: ✅ implementado · 🟡 parcial · ❌ pendiente.
 | RF-13 | ✅ | Las salas se crean con `crear_sala()`: 20 filas A–T, bloques 4/20/4. |
 | RF-14 | ✅ | Fila accesible 2/10/2 en lugar de J–K, con color propio en el mapa. |
 | RF-15 | ✅ | Tabla de precios por formato con un monto en pesos para estándar y otro para VIP (pantalla Salas, migración 021); la VIP siempre cuesta más. Cada función toma los precios de su formato. En la compra se ve el precio de cada tipo, el total separado y un aviso destacado antes de confirmar; el PDF muestra el precio real de cada entrada. |
-| RF-16 | 🟡 | Pantalla Salas: alta de salas y habilitar / deshabilitar. La distribución de butacas es fija (la definió el cliente) y no se edita. |
+| RF-16 | ✅ | Pantalla Salas: alta de salas, habilitar / deshabilitar y precios de entradas por formato. La distribución de butacas es fija porque la definió el cliente para todas las salas (ver S-18). |
 | RF-17 | ✅ | Alta, edición y baja de funciones (película, fecha, hora, formato, idioma, precio). |
 | RF-18 | ✅ | "Programar funciones": días de la semana + horarios + período, con vista previa (S-11). |
 | RF-19 | ✅ | Sala asignada por la base (`asignar_funcion`, `editar_funcion`, `programar_funciones`); nunca se superponen. |
@@ -328,7 +329,7 @@ Referencias: ✅ implementado · 🟡 parcial · ❌ pendiente.
 | ID | Estado | Detalle |
 |---|---|---|
 | RNF-01 | ✅ | Pantallas de admin con el mismo patrón: listado + botón "Nuevo" + formulario que se abre arriba. |
-| RNF-02 | 🟡 | "Programar funciones" usa chips de días, chips de horarios y atajos de período. Quedan selectores de fecha comunes en estreno, función única y registro. |
+| RNF-02 | ✅ | No queda ningún calendario: todas las fechas usan un componente propio (`selector-fecha`) con día y mes en desplegables cortos, el año en un desplegable o escrito, y atajos con los próximos 14 días en las fechas de funciones. Avisa si la fecha no existe (ej. 31/02). "Programar funciones" suma chips de días, de horarios y atajos de período. La hora se escribe directo. |
 | RNF-03 | ✅ | Estética propia (tema oscuro, dorado, tipografía de marquesina). |
 | RNF-04 | ✅ | Angular standalone, signals, zoneless, Reactive Forms, guards, lazy loading. |
 | RNF-05 | ✅ | Base de datos, Auth, Storage, funciones SQL y Realtime (RF-23). |

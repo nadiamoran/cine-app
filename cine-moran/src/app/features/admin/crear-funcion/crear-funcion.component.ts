@@ -1,4 +1,5 @@
 import { Component, OnInit, computed, signal } from '@angular/core';
+import { SelectorFechaComponent } from '../../../shared/selector-fecha/selector-fecha.component';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DatePipe } from '@angular/common';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -14,10 +15,13 @@ const fechaFuncionValida = fechaEnRangoValidator(new Date().getFullYear() - 1, n
 @Component({
   selector: 'app-crear-funcion',
   standalone: true,
-  imports: [ReactiveFormsModule, DatePipe],
+  imports: [ReactiveFormsModule, DatePipe, SelectorFechaComponent],
   templateUrl: './crear-funcion.component.html',
 })
 export class CrearFuncionComponent implements OnInit {
+  // año actual, para los límites del selector de fecha
+  readonly anioActual = new Date().getFullYear();
+
   peliculas = signal<Pelicula[]>([]);
   guardando = signal(false);
   errorMsg = signal<string | null>(null);

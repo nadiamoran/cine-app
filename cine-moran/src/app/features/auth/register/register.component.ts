@@ -1,4 +1,5 @@
 import { Component, signal } from '@angular/core';
+import { SelectorFechaComponent } from '../../../shared/selector-fecha/selector-fecha.component';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/auth/auth.service';
@@ -7,10 +8,13 @@ import { fechaEnRangoValidator, fechaNoFuturaValidator } from '../../../shared/v
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [RouterLink, ReactiveFormsModule],
+  imports: [RouterLink, ReactiveFormsModule, SelectorFechaComponent],
   templateUrl: './register.component.html',
 })
 export class RegisterComponent {
+  // año actual, para los límites del selector de fecha
+  readonly anioActual = new Date().getFullYear();
+
   errorMsg = signal<string | null>(null);
   loading = signal(false);
 

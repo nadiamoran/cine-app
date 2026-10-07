@@ -1478,6 +1478,19 @@ button:disabled {
   color: var(--text-muted);
 }
 
+/* ---------- selector de fecha (RNF-02): día / mes / año, sin calendario ---------- */
+
+.selector-fecha {
+  display: grid;
+  grid-template-columns: 5.5rem minmax(0, 1fr) 6.5rem;
+  gap: 0.5rem;
+}
+
+.selector-fecha select,
+.selector-fecha input {
+  width: 100%;
+}
+
 /* ---------- listado de admin en forma de tabla (Películas) ---------- */
 
 .subtitulo-admin {

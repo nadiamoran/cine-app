@@ -1,4 +1,5 @@
 import { Component, ElementRef, OnInit, ViewChild, computed, signal } from '@angular/core';
+import { SelectorFechaComponent } from '../../../shared/selector-fecha/selector-fecha.component';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DatePipe } from '@angular/common';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -16,10 +17,13 @@ const anioMaximoEstreno = new Date().getFullYear() + 5;
 @Component({
   selector: 'app-crear-pelicula',
   standalone: true,
-  imports: [ReactiveFormsModule, DatePipe, TablaPreventaComponent],
+  imports: [ReactiveFormsModule, DatePipe, TablaPreventaComponent, SelectorFechaComponent],
   templateUrl: './crear-pelicula.component.html',
 })
 export class CrearPeliculaComponent implements OnInit {
+  // año actual, para los límites del selector de fecha
+  readonly anioActual = new Date().getFullYear();
+
   readonly estados = ESTADOS_PELICULA;
 
   @ViewChild('inputImagen') inputImagen?: ElementRef<HTMLInputElement>;

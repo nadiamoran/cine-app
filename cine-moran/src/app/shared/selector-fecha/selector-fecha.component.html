@@ -1,0 +1,53 @@
+@if (atajos().length > 0) {
+  <div class="chips-generos">
+    @for (atajo of atajos(); track atajo.valor) {
+      <button
+        type="button"
+        class="chip-genero"
+        [class.chip-genero-activo]="esAtajoElegido(atajo.valor)"
+        (click)="onAtajo(atajo.valor)"
+      >
+        {{ atajo.etiqueta }}
+      </button>
+    }
+  </div>
+}
+
+<div class="selector-fecha">
+  <select [value]="dia()" (change)="onDia($any($event.target).value)" aria-label="Día">
+    <option value="">Día</option>
+    @for (d of dias; track d) {
+      <option [value]="d" [selected]="dia() === '' + d">{{ d }}</option>
+    }
+  </select>
+
+  <select [value]="mes()" (change)="onMes($any($event.target).value)" aria-label="Mes">
+    <option value="">Mes</option>
+    @for (m of meses; track m; let i = $index) {
+      <option [value]="i + 1" [selected]="mes() === '' + (i + 1)">{{ m }}</option>
+    }
+  </select>
+
+  @if (aniosEnLista(); as anios) {
+    <select [value]="anio()" (change)="onAnio($any($event.target).value)" aria-label="Año">
+      <option value="">Año</option>
+      @for (a of anios; track a) {
+        <option [value]="a" [selected]="anio() === '' + a">{{ a }}</option>
+      }
+    </select>
+  } @else {
+    <input
+      type="text"
+      inputmode="numeric"
+      maxlength="4"
+      placeholder="Año"
+      aria-label="Año"
+      [value]="anio()"
+      (input)="onAnio($any($event.target).value)"
+    />
+  }
+</div>
+
+@if (fechaInexistente()) {
+  <small class="error">Esa fecha no existe</small>
+}

@@ -88,7 +88,12 @@
 
   <label>
     Fecha de estreno
-    <input type="date" formControlName="fechaEstreno" min="1900-01-01" max="2099-12-31" />
+    <app-selector-fecha
+      [valor]="peliculaForm.controls.fechaEstreno.value"
+      [anioMinimo]="1900"
+      [anioMaximo]="anioActual + 5"
+      (cambio)="peliculaForm.controls.fechaEstreno.setValue($event)"
+    />
     @if (peliculaForm.controls.fechaEstreno.invalid) {
       <small class="error">Ingresá una fecha válida (año de 4 cifras, desde 1900 hasta 5 años adelante)</small>
     }

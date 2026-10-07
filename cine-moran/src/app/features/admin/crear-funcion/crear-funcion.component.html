@@ -67,7 +67,12 @@
 
   <label>
     Desde
-    <input type="date" formControlName="desde" />
+    <app-selector-fecha
+      [valor]="programacionForm.controls.desde.value"
+      [anioMinimo]="anioActual - 1"
+      [anioMaximo]="anioActual + 2" [proximosDias]="14"
+      (cambio)="programacionForm.controls.desde.setValue($event); programacionForm.controls.desde.markAsTouched()"
+    />
     @if (programacionForm.controls.desde.touched && programacionForm.controls.desde.errors?.['fechaFueraDeRango']) {
       <small class="error">Ingresá una fecha válida (año de 4 cifras)</small>
     }
@@ -80,7 +85,12 @@
       <button type="button" class="chip-genero" (click)="onAtajoPeriodo('1-mes')">1 mes</button>
       <button type="button" class="chip-genero" (click)="onAtajoPeriodo('fin-de-mes')">Hasta fin de mes</button>
     </div>
-    <input type="date" formControlName="hasta" />
+    <app-selector-fecha
+      [valor]="programacionForm.controls.hasta.value"
+      [anioMinimo]="anioActual - 1"
+      [anioMaximo]="anioActual + 2"
+      (cambio)="programacionForm.controls.hasta.setValue($event); programacionForm.controls.hasta.markAsTouched()"
+    />
     @if (programacionForm.controls.hasta.touched && programacionForm.controls.hasta.errors?.['fechaFueraDeRango']) {
       <small class="error">Ingresá una fecha válida (año de 4 cifras)</small>
     }
@@ -169,7 +179,12 @@
 
   <label>
     Fecha
-    <input type="date" formControlName="fecha" />
+    <app-selector-fecha
+      [valor]="funcionForm.controls.fecha.value"
+      [anioMinimo]="anioActual - 1"
+      [anioMaximo]="anioActual + 2" [proximosDias]="14"
+      (cambio)="funcionForm.controls.fecha.setValue($event); funcionForm.controls.fecha.markAsTouched()"
+    />
     @if (funcionForm.controls.fecha.touched && funcionForm.controls.fecha.errors?.['fechaFueraDeRango']) {
       <small class="error">Ingresá una fecha válida (año de 4 cifras)</small>
     }
