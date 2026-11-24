@@ -1,5 +1,6 @@
 import { Component, OnInit, computed, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
+import { Router } from '@angular/router';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AuthService } from '../../../core/auth/auth.service';
 import { PropuestasService } from '../propuestas.service';
@@ -44,9 +45,19 @@ export class ProponerPeliculaComponent implements OnInit {
   constructor(
     private propuestasService: PropuestasService,
     private authService: AuthService,
+    private router: Router,
   ) {}
 
   async ngOnInit() {
+    // solo el cliente propone: el admin va a su panel y el empleado a validar
+    const rol = this.authService.currentUser()?.rol;
+    if (rol === 'administrador' || rol === 'empleado') {
+      this.router.navigate([rol === 'administrador' ? '/admin' : '/empleado/validar'], {
+        replaceUrl: true,
+      });
+      return;
+    }
+
     await this.recargar();
   }
 
