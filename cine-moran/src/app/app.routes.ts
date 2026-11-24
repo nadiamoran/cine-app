@@ -61,6 +61,15 @@ export const routes: Routes = [
   },
 
   {
+    path: 'proponer',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/propuestas/proponer-pelicula/proponer-pelicula.component').then(
+        (m) => m.ProponerPeliculaComponent,
+      ),
+  },
+
+  {
     path: 'funcion/:id',
     canDeactivate: [confirmarSalidaGuard],
     loadComponent: () =>
@@ -160,6 +169,13 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/admin/recompensas/recompensas.component').then(
             (m) => m.RecompensasComponent,
+          ),
+      },
+      {
+        path: 'propuestas',
+        loadComponent: () =>
+          import('./features/admin/propuestas/gestionar-propuestas.component').then(
+            (m) => m.GestionarPropuestasComponent,
           ),
       },
       {

@@ -21,6 +21,7 @@
     <a routerLink="/proximamente" routerLinkActive="activo">Próximamente</a>
     @if (authService.currentUser()?.rol === 'cliente') {
       <a routerLink="/mis-peliculas" routerLinkActive="activo">Mis películas</a>
+      <a routerLink="/proponer" routerLinkActive="activo">Proponer película</a>
     }
     <!-- el admin tiene un solo link: desde el panel entra a cada sección -->
     @if (authService.currentUser()?.rol === 'administrador') {

@@ -1,0 +1,60 @@
+<h1>Proponer una película</h1>
+<p>Contanos qué película te gustaría ver en el cine. Podés tener una propuesta en revisión a la vez.</p>
+
+@if (cargando()) {
+  <p>Cargando...</p>
+} @else {
+  @if (tienePendiente()) {
+    <p class="detalle-seleccion">
+      Tu propuesta está en revisión. Cuando el cine la resuelva vas a poder hacer otra.
+    </p>
+  } @else {
+    <form novalidate [formGroup]="propuestaForm" (ngSubmit)="onEnviar()">
+      <label>
+        Título
+        <input type="text" formControlName="titulo" />
+        @if (propuestaForm.controls.titulo.touched && propuestaForm.controls.titulo.invalid) {
+          <small class="error">El título es obligatorio</small>
+        }
+      </label>
+
+      <label>
+        Descripción
+        <textarea formControlName="descripcion" rows="3"></textarea>
+        @if (propuestaForm.controls.descripcion.touched && propuestaForm.controls.descripcion.invalid) {
+          <small class="error">La descripción es obligatoria</small>
+        }
+      </label>
+
+      <label>
+        ¿Por qué querés verla en el cine?
+        <textarea formControlName="motivo" rows="3"></textarea>
+        @if (propuestaForm.controls.motivo.touched && propuestaForm.controls.motivo.invalid) {
+          <small class="error">Contanos el motivo</small>
+        }
+      </label>
+
+      @if (errorMsg()) {
+        <p class="error">{{ errorMsg() }}</p>
+      }
+
+      <button type="submit" [disabled]="enviando()">
+        {{ enviando() ? 'Enviando...' : 'Enviar propuesta' }}
+      </button>
+    </form>
+  }
+
+  <h2>Mis propuestas</h2>
+  @for (propuesta of propuestas(); track propuesta.id) {
+    <article class="cupon-item">
+      <div>
+        <strong>{{ propuesta.titulo }}</strong>
+        <p class="detalle-seleccion">
+          {{ propuesta.createdAt | date: 'dd/MM/yyyy' }} · {{ etiquetas[propuesta.estado] }}
+        </p>
+      </div>
+    </article>
+  } @empty {
+    <p class="detalle-seleccion">Todavía no hiciste ninguna propuesta.</p>
+  }
+}

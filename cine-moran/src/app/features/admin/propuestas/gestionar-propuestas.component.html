@@ -1,0 +1,46 @@
+<h1>Propuestas de películas</h1>
+
+@if (errorMsg()) {
+  <p class="error">{{ errorMsg() }}</p>
+}
+
+@if (cargando()) {
+  <p>Cargando...</p>
+} @else {
+  <h2>Pendientes ({{ pendientes().length }})</h2>
+  @for (propuesta of pendientes(); track propuesta.id) {
+    <article class="cupon-item">
+      <div>
+        <strong>{{ propuesta.titulo }}</strong>
+        <p>{{ propuesta.descripcion }}</p>
+        <p class="detalle-seleccion"><em>Por qué la quieren:</em> {{ propuesta.motivo }}</p>
+        <p class="detalle-seleccion">{{ propuesta.createdAt | date: 'dd/MM/yyyy' }}</p>
+      </div>
+      <button type="button" [disabled]="resolviendoId() === propuesta.id" (click)="onAceptar(propuesta)">
+        Aceptar
+      </button>
+      <button
+        type="button"
+        class="btn-secundario"
+        [disabled]="resolviendoId() === propuesta.id"
+        (click)="onRechazar(propuesta)"
+      >
+        Rechazar
+      </button>
+    </article>
+  } @empty {
+    <p class="detalle-seleccion">No hay propuestas pendientes.</p>
+  }
+
+  <h2>Resueltas</h2>
+  @for (propuesta of resueltas(); track propuesta.id) {
+    <article class="cupon-item">
+      <div>
+        <strong>{{ propuesta.titulo }}</strong>
+        <p class="detalle-seleccion">{{ propuesta.estado === 'aceptada' ? 'Aceptada' : 'Rechazada' }}</p>
+      </div>
+    </article>
+  } @empty {
+    <p class="detalle-seleccion">Todavía no resolviste ninguna.</p>
+  }
+}

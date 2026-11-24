@@ -18,6 +18,7 @@ export class AdminLayoutComponent {
         { ruta: '/admin/crear-pelicula', texto: 'Películas' },
         { ruta: '/admin/crear-funcion', texto: 'Funciones' },
         { ruta: '/admin/salas', texto: 'Salas' },
+        { ruta: '/admin/propuestas', texto: 'Propuestas' },
       ],
     },
     {
