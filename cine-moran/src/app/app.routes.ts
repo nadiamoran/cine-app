@@ -61,6 +61,15 @@ export const routes: Routes = [
   },
 
   {
+    path: 'notificaciones',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/notificaciones/notificaciones.component').then(
+        (m) => m.NotificacionesComponent,
+      ),
+  },
+
+  {
     path: 'proponer',
     canActivate: [authGuard],
     loadComponent: () =>

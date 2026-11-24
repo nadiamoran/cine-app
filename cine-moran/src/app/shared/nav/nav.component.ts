@@ -1,6 +1,7 @@
 import { Component, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../core/auth/auth.service';
+import { NotificacionesService } from '../../features/notificaciones/notificaciones.service';
 
 @Component({
   selector: 'app-nav',
@@ -13,7 +14,10 @@ export class NavComponent {
   // detrás del botón ☰
   menuAbierto = signal(false);
 
-  constructor(protected authService: AuthService) {}
+  constructor(
+    protected authService: AuthService,
+    protected notificacionesService: NotificacionesService,
+  ) {}
 
   // a dónde lleva "Hola, X": cada rol a su pantalla (solo el cliente tiene perfil)
   inicioUsuario(): string {

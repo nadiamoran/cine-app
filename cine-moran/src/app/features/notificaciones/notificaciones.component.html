@@ -1,0 +1,34 @@
+<h1>Notificaciones</h1>
+
+@if (notificacionesService.noLeidas() > 0) {
+  <button type="button" class="btn-secundario" (click)="notificacionesService.marcarTodasLeidas()">
+    Marcar todas como leídas
+  </button>
+}
+
+@for (notificacion of notificacionesService.notificaciones(); track notificacion.id) {
+  <article class="cupon-item" [class.notificacion-nueva]="!notificacion.leida">
+    <div>
+      <strong>{{ notificacion.titulo }}</strong>
+      <p>{{ notificacion.mensaje }}</p>
+      <p class="detalle-seleccion">{{ notificacion.createdAt | date: 'dd/MM/yyyy HH:mm' }}</p>
+    </div>
+
+    @if (notificacion.enlace) {
+      <a
+        class="btn-primario"
+        [routerLink]="notificacion.enlace"
+        (click)="notificacionesService.marcarLeida(notificacion.id)"
+      >
+        Ver
+      </a>
+    }
+    @if (!notificacion.leida) {
+      <button type="button" class="btn-secundario" (click)="notificacionesService.marcarLeida(notificacion.id)">
+        Marcar como leída
+      </button>
+    }
+  </article>
+} @empty {
+  <p class="detalle-seleccion">No tenés notificaciones.</p>
+}
