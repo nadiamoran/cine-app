@@ -2,8 +2,10 @@ import { Component, ElementRef, OnInit, ViewChild, computed, signal } from '@ang
 import { SelectorFechaComponent } from '../../../shared/selector-fecha/selector-fecha.component';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DatePipe } from '@angular/common';
+import { ActivatedRoute } from '@angular/router';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { PeliculasService } from '../../catalogo/peliculas.service';
+import { PropuestasService } from '../../propuestas/propuestas.service';
 import { ESTADOS_PELICULA, EstadoPelicula, Pelicula } from '../../catalogo/pelicula.model';
 import { FuncionesService } from '../../funciones/funciones.service';
 import { PrecioEntrada } from '../../funciones/funcion.model';
@@ -93,6 +95,8 @@ export class CrearPeliculaComponent implements OnInit {
   constructor(
     private peliculasService: PeliculasService,
     private funcionesService: FuncionesService,
+    private propuestasService: PropuestasService,
+    private route: ActivatedRoute,
   ) {
     // sin fecha de estreno no hay preventa: la casilla queda deshabilitada
     this.peliculaForm.controls.fechaEstreno.valueChanges
@@ -103,6 +107,16 @@ export class CrearPeliculaComponent implements OnInit {
   async ngOnInit() {
     const [precios] = await Promise.all([this.funcionesService.getPrecios(), this.recargar()]);
     this.precios.set(precios);
+
+    // si viene de aceptar una propuesta, abre el alta con título y descripción
+    const propuestaId = this.route.snapshot.queryParamMap.get('propuesta');
+    if (propuestaId) {
+      const propuesta = await this.propuestasService.getById(propuestaId);
+      if (propuesta) {
+        this.onNuevaPelicula();
+        this.peliculaForm.patchValue({ nombre: propuesta.titulo, sinopsis: propuesta.descripcion });
+      }
+    }
   }
 
   private habilitarPreventa(control: FormControl<boolean>, hayFecha: boolean) {
