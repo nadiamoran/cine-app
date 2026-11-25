@@ -1,0 +1,46 @@
+<h1>Usuarios</h1>
+<p class="detalle-seleccion">
+  El rol de acceso habilita secciones del panel de administración sin modificar el tipo de cuenta
+  del usuario.
+</p>
+
+<label>
+  Buscar por nombre o email
+  <input type="text" #buscador [value]="busqueda()" (input)="busqueda.set(buscador.value)" />
+</label>
+
+@if (errorMsg()) {
+  <p class="error">{{ errorMsg() }}</p>
+}
+@if (exito()) {
+  <p>{{ exito() }}</p>
+}
+
+@if (cargando()) {
+  <p>Cargando...</p>
+} @else {
+  @for (usuario of usuariosFiltrados(); track usuario.id) {
+    <article class="cupon-item">
+      <div>
+        <strong>{{ usuario.nombre }} {{ usuario.apellido }}</strong>
+        <p class="detalle-seleccion">{{ usuario.email }} · {{ usuario.rol }}</p>
+      </div>
+
+      <label>
+        Rol de acceso
+        <select
+          #selector
+          [disabled]="guardandoId() === usuario.id"
+          (change)="onCambiarRol(usuario, selector.value)"
+        >
+          <option value="" [selected]="!usuario.rolId">Sin rol asignado</option>
+          @for (rol of roles(); track rol.id) {
+            <option [value]="rol.id" [selected]="usuario.rolId === rol.id">{{ rol.nombre }}</option>
+          }
+        </select>
+      </label>
+    </article>
+  } @empty {
+    <p class="detalle-seleccion">No hay usuarios que coincidan.</p>
+  }
+}

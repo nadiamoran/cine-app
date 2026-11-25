@@ -3,7 +3,7 @@
     <!-- exact: "Inicio" (/admin) solo se marca en el panel, no en las pantallas hijas -->
     <a routerLink="/admin" routerLinkActive="activo" [routerLinkActiveOptions]="{ exact: true }">Inicio</a>
 
-    @for (grupo of grupos; track grupo.titulo) {
+    @for (grupo of grupos(); track grupo.titulo) {
       <span class="admin-menu-grupo">{{ grupo.titulo }}</span>
       @for (link of grupo.links; track link.ruta) {
         <a [routerLink]="link.ruta" routerLinkActive="activo">{{ link.texto }}</a>

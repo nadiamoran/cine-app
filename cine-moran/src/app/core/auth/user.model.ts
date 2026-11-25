@@ -26,4 +26,5 @@ export interface Profile {
   rol: 'cliente' | 'empleado' | 'administrador';
   puntos: number;
   credito: number; // RF-46: crédito por cancelaciones, se usa al pagar
+  permisos: string[]; // secciones del admin a las que puede entrar (rol personalizado, migración 032)
 }

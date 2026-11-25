@@ -62,6 +62,9 @@ export class NotificacionesService {
         },
         (payload) => {
           this.notificaciones.update((lista) => [this.mapNotificacion(payload.new), ...lista]);
+          // el aviso puede venir con cambios en la cuenta (crédito por una
+          // función cancelada): actualizo puntos y crédito en pantalla
+          this.authService.recargarPerfil();
         },
       )
       .subscribe();

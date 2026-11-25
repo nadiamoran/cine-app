@@ -17,6 +17,33 @@
     </div>
   </div>
 
+  <h2>Mis listas de espera</h2>
+
+  @for (lista of listasEspera(); track lista.id) {
+    <article class="cupon-item">
+      <div>
+        <strong>{{ lista.pelicula }}</strong>
+        <p class="detalle-seleccion">
+          {{ lista.inicio | date: 'EEEE dd/MM HH:mm' }} · {{ lista.sala }} ·
+          {{ lista.cantidad }} {{ lista.cantidad === 1 ? 'butaca' : 'butacas' }}
+        </p>
+        @if (lista.estado === 'avisado') {
+          <p class="detalle-seleccion">
+            ¡Tenés las butacas reservadas hasta las {{ lista.venceEn | date: 'HH:mm' }}!
+          </p>
+        } @else {
+          <p class="detalle-seleccion">Lugar {{ lista.posicion }} en la lista</p>
+        }
+      </div>
+      @if (lista.estado === 'avisado') {
+        <a class="btn-primario" [routerLink]="['/funcion', lista.funcionId]">Comprar</a>
+      }
+      <button type="button" class="btn-secundario" (click)="onSalirEspera(lista.id)">Salir de la lista</button>
+    </article>
+  } @empty {
+    <p class="detalle-seleccion">No estás anotado en ninguna lista de espera.</p>
+  }
+
   <h2>Historial de compras</h2>
 
   <p class="detalle-seleccion">

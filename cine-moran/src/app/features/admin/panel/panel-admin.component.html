@@ -5,9 +5,9 @@
 }
 
 <div class="grilla-panel">
-  @for (seccion of secciones; track seccion.ruta) {
+  @for (seccion of secciones(); track seccion.ruta) {
     <a class="tarjeta-panel" [routerLink]="seccion.ruta">
-      <span class="tarjeta-panel-titulo">{{ seccion.titulo }}</span>
+      <span class="tarjeta-panel-titulo">{{ seccion.texto }}</span>
       <span class="tarjeta-panel-detalle">{{ seccion.detalle }}</span>
     </a>
   }

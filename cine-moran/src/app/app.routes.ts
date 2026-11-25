@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { adminGuard } from './core/guards/admin.guard';
+import { permisoGuard } from './core/guards/permiso.guard';
 import { authGuard } from './core/guards/auth.guard';
 import { empleadoGuard } from './core/guards/empleado.guard';
 import { confirmarSalidaGuard } from './core/guards/confirmar-salida.guard';
@@ -118,6 +119,8 @@ export const routes: Routes = [
       },
       {
         path: 'crear-pelicula',
+        canActivate: [permisoGuard],
+        data: { permiso: 'peliculas' },
         loadComponent: () =>
           import('./features/admin/crear-pelicula/crear-pelicula.component').then(
             (m) => m.CrearPeliculaComponent,
@@ -125,6 +128,8 @@ export const routes: Routes = [
       },
       {
         path: 'crear-funcion',
+        canActivate: [permisoGuard],
+        data: { permiso: 'funciones' },
         loadComponent: () =>
           import('./features/admin/crear-funcion/crear-funcion.component').then(
             (m) => m.CrearFuncionComponent,
@@ -132,6 +137,8 @@ export const routes: Routes = [
       },
       {
         path: 'salas',
+        canActivate: [permisoGuard],
+        data: { permiso: 'salas' },
         loadComponent: () =>
           import('./features/admin/gestionar-salas/gestionar-salas.component').then(
             (m) => m.GestionarSalasComponent,
@@ -139,6 +146,8 @@ export const routes: Routes = [
       },
       {
         path: 'cupones',
+        canActivate: [permisoGuard],
+        data: { permiso: 'cupones' },
         loadComponent: () =>
           import('./features/admin/gestionar-cupones/gestionar-cupones.component').then(
             (m) => m.GestionarCuponesComponent,
@@ -146,6 +155,8 @@ export const routes: Routes = [
       },
       {
         path: 'crear-producto',
+        canActivate: [permisoGuard],
+        data: { permiso: 'productos' },
         loadComponent: () =>
           import('./features/admin/crear-producto/crear-producto.component').then(
             (m) => m.CrearProductoComponent,
@@ -154,6 +165,8 @@ export const routes: Routes = [
       {
         // la misma pantalla del empleado, pero dentro del marco de admin
         path: 'validar',
+        canActivate: [permisoGuard],
+        data: { permiso: 'validar' },
         loadComponent: () =>
           import('./features/empleado/validar-entrada/validar-entrada.component').then(
             (m) => m.ValidarEntradaComponent,
@@ -161,6 +174,8 @@ export const routes: Routes = [
       },
       {
         path: 'reportes',
+        canActivate: [permisoGuard],
+        data: { permiso: 'reportes' },
         loadComponent: () =>
           import('./features/admin/reportes/reportes.component').then(
             (m) => m.ReportesComponent,
@@ -168,6 +183,8 @@ export const routes: Routes = [
       },
       {
         path: 'actividad',
+        canActivate: [permisoGuard],
+        data: { permiso: 'actividad' },
         loadComponent: () =>
           import('./features/admin/actividad/actividad.component').then(
             (m) => m.ActividadComponent,
@@ -175,6 +192,8 @@ export const routes: Routes = [
       },
       {
         path: 'recompensas',
+        canActivate: [permisoGuard],
+        data: { permiso: 'recompensas' },
         loadComponent: () =>
           import('./features/admin/recompensas/recompensas.component').then(
             (m) => m.RecompensasComponent,
@@ -182,6 +201,8 @@ export const routes: Routes = [
       },
       {
         path: 'propuestas',
+        canActivate: [permisoGuard],
+        data: { permiso: 'propuestas' },
         loadComponent: () =>
           import('./features/admin/propuestas/gestionar-propuestas.component').then(
             (m) => m.GestionarPropuestasComponent,
@@ -189,9 +210,29 @@ export const routes: Routes = [
       },
       {
         path: 'crear-combo',
+        canActivate: [permisoGuard],
+        data: { permiso: 'combos' },
         loadComponent: () =>
           import('./features/admin/crear-combo/crear-combo.component').then(
             (m) => m.CrearComboComponent,
+          ),
+      },
+      {
+        path: 'roles',
+        canActivate: [permisoGuard],
+        data: { permiso: 'admin' },
+        loadComponent: () =>
+          import('./features/admin/roles/gestionar-roles.component').then(
+            (m) => m.GestionarRolesComponent,
+          ),
+      },
+      {
+        path: 'usuarios',
+        canActivate: [permisoGuard],
+        data: { permiso: 'admin' },
+        loadComponent: () =>
+          import('./features/admin/roles/asignar-roles.component').then(
+            (m) => m.AsignarRolesComponent,
           ),
       },
     ],

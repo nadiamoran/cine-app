@@ -3,8 +3,8 @@
 **Materia:** Programación IV — TP 1 (2026 C2)
 **Alumna:** Nadia Moran
 **Cliente:** Empresario Importante (cine de un solo edificio con varias salas)
-**Fuente:** intercambio de 10 mails (01/01/2020 al 10/03/2020) + consigna del TP
-**Última actualización:** 04/10/2026 — se agregó el estado de implementación de cada requerimiento (sección 9)
+**Fuente:** intercambio de 11 mails (01/01/2020 al 10/03/2020) + consigna del TP
+**Última actualización:** 23/11/2026 — se sumó el último mail del cliente (recuperatorio); implementados RF-56 a RF-60 (propuestas, notificaciones, cancelación de funciones, lista de espera y roles)
 
 ---
 
@@ -14,7 +14,7 @@
 Construir una aplicación web para un cine donde los clientes puedan comprar entradas (y productos del candy bar) online, recibir un PDF con un QR, y donde el personal pueda administrar el cine y validar entradas.
 
 ### 1.2 Alcance
-Incluye: cartelera, compra de entradas con selección de butacas en tiempo real, candy bar y combos, cupones, puntos de fidelización, reseñas, preventa, cancelaciones con crédito, panel de administración, validación de QR, reportes y log de actividad.
+Incluye: cartelera, compra de entradas con selección de butacas en tiempo real, candy bar y combos, cupones, puntos de fidelización, reseñas, preventa, cancelaciones con crédito, propuestas de películas de los clientes, notificaciones dentro de la app, cancelación de funciones por el cine, lista de espera, roles personalizados, panel de administración, validación de QR, reportes y log de actividad.
 
 No incluye (ver 6): pasarela de pago real, y el mapa del cine (el cliente todavía no dio luz verde).
 
@@ -144,6 +144,16 @@ Prioridad: **A** = imprescindible (lo pidió el cliente y define el sistema), **
 | RF-54 | **Gráficos:** películas más vistas por semana y por mes; producto del candy bar más vendido. | 10/03 | M |
 | RF-55 | **Log de actividad:** quién creó qué función, quién modificó un precio, quién validó un QR, con fecha y hora. | 10/03 | M |
 
+### 2.12 Último mail del cliente (recuperatorio)
+
+| ID | Requerimiento | Mail | Prior. |
+|---|---|---|---|
+| RF-56 | Los clientes **proponen películas** que no están en la cartelera, enviando **título, descripción y una explicación** de por qué la quieren. Cada cliente puede tener **una propuesta a la vez**. El administrador ve las propuestas y las **acepta o rechaza**; al aceptar, lo lleva a **crear la película** con los datos enviados. | 10/03 (último) | M |
+| RF-57 | **Notificaciones dentro de la app:** el usuario recibe avisos (con contador en el menú y en vivo) cuando se abre la venta de una película de Próximamente en la que activó la alerta (RF-07), cuando el cine cancela una función de la que compró y cuando se le libera lugar en una lista de espera. | 08/03 y 10/03 (último) | M |
+| RF-58 | **Cancelación de una función por el cine:** el admin cancela una función completa. Todas las entradas vendidas pasan a **crédito** en la cuenta de cada comprador (el monto total, candy incluido), las butacas se liberan, cada comprador recibe una **notificación** y se le ofrece **reubicarse** en otra función de la misma película usando su crédito. Todo es **atómico**: se acredita a todos o a nadie. | 10/03 (último) | M |
+| RF-59 | **Lista de espera** para funciones agotadas: los usuarios registrados se anotan eligiendo cuántas butacas quieren. Si se liberan butacas, el sistema avisa al primero de la lista, que tiene **15 minutos** para comprar antes de que pase al siguiente. El usuario ve en su perfil en qué listas está y en qué posición; el admin ve cuánta gente espera en cada función. | 10/03 (último) | M |
+| RF-60 | **Roles configurables:** el admin crea roles que dan acceso solo a las secciones del panel que elija (ej.: un rol que solo ve Reportes) y se los asigna a cada usuario. | 10/03 (último) | M |
+
 ---
 
 ## 3. Requerimientos no funcionales
@@ -182,7 +192,7 @@ Prioridad: **A** = imprescindible (lo pidió el cliente y define el sistema), **
 
 ## 5. Modelo de datos
 
-Tablas que existen hoy en Supabase (creadas por `supabase/schema.sql` y las migraciones 001 a 027):
+Tablas que existen hoy en Supabase (creadas por `supabase/schema.sql` y las migraciones 001 a 032):
 
 | Tabla | Para qué |
 |---|---|
@@ -190,6 +200,10 @@ Tablas que existen hoy en Supabase (creadas por `supabase/schema.sql` y las migr
 | `peliculas` | Nombre, imagen, sinopsis, duración, géneros (`text[]`), restricción de edad, fecha de estreno, estado (`en_cartelera` / `proximamente` / `baja`), ventas (entradas vendidas, las mantienen triggers) y descuento de preventa en pesos (vacío = sin preventa) |
 | `resenas` | Una reseña por usuario y película (1 a 5 estrellas + comentario) |
 | `alertas_estreno` | Usuarios que pidieron aviso de una película próxima |
+| `propuestas_peliculas` | Propuesta de un cliente (título, descripción, motivo) y su estado (`pendiente` / `aceptada` / `rechazada`). Un índice único parcial permite una sola pendiente por usuario; el admin solo puede cambiar el estado |
+| `notificaciones` | Avisos de cada usuario (título, mensaje, enlace, leída). Solo las crean funciones y triggers de la base; cada usuario lee y marca las suyas. La app se suscribe con Realtime |
+| `lista_espera` | Usuarios anotados en una función agotada: cantidad de butacas, estado (`esperando` / `avisado` / `comprada` / `vencida` / `cancelada`) y cuándo vence la reserva de 15 minutos |
+| `roles` | Roles personalizados: nombre y lista de permisos (una sección del panel de admin cada uno). `profiles.rol_id` indica el rol de cada usuario |
 | `salas` | Nombre y si está habilitada para recibir funciones nuevas |
 | `butacas` | Fila, bloque, número y tipo (`estandar` / `vip` / `accesible`) de cada butaca de cada sala |
 | `funciones` | Película, sala asignada, inicio, fin, formato, idioma, precio estándar y precio VIP (copiados de `precios_entrada` según el formato) |
@@ -231,10 +245,16 @@ Estos puntos son ambiguos o se contradicen en los mails. Dejarlos escritos sirve
 | S-11 | Función recurrente: ¿hasta cuándo se repite? | Se define **rango de fechas** al crearla (máximo 60 días), con días de la semana y horarios. Antes de crear se muestra una **vista previa** con la sala de cada función y las que no tienen lugar. | Sí |
 | S-12 | Un usuario anónimo no tiene cuenta: ¿cómo recibe el PDF? | Se pide un **email** en el checkout y se descarga el PDF en la pantalla de confirmación. | Sí |
 | S-13 | Combos "entrada + pochoclos + bebida": ¿qué entrada cubren? | El combo indica cuántas **entradas generales** incluye. El cliente elige sus butacas como siempre y, si elige el combo, esas entradas no se cobran sueltas: paga solo el precio del combo. **Las butacas VIP no entran en el combo.** | No |
-| S-14 | ¿Qué pasa con una función que ya tiene entradas vendidas si el admin la edita o la borra? | No se puede **eliminar**. Se puede **editar**, pero no cambia de sala (las butacas compradas son de esa sala): solo se acepta el cambio si esa sala sigue libre. | No |
+| S-14 | ¿Qué pasa con una función que ya tiene entradas vendidas si el admin la edita o la borra? | No se puede **eliminar**. El cine sí puede **cancelarla** (RF-58). Se puede **editar**, pero no cambia de sala (las butacas compradas son de esa sala): solo se acepta el cambio si esa sala sigue libre. | No |
 | S-15 | ¿Qué pasa al deshabilitar una sala? | No recibe **funciones nuevas**; las que ya tenía programadas se mantienen. | No |
 | S-16 | Dar de baja un producto o un combo. | No se borra (las compras viejas lo referencian): queda **inactivo**, no se vende y no se puede sumar a combos nuevos. | No |
 | S-17 | El admin pidió elegir el género "de los ya cargados". | Los géneros disponibles se toman de las películas existentes; si hace falta uno nuevo, se agrega desde el mismo formulario. | No |
+| S-19 | Propuestas de películas: ¿pueden proponer también el empleado y el administrador? ¿Qué pasa con una propuesta aceptada si después no se guarda la película? | Solo propone el rol **cliente** (lo exige la base; el admin y el empleado que entren a la pantalla son redirigidos a su panel). "Una a la vez" significa una **pendiente**: cuando el cine la resuelve, el cliente puede hacer otra. Al aceptar, la propuesta queda marcada como aceptada y se abre el alta de película con título y descripción (la descripción pasa a ser la sinopsis); si el admin no guarda la película, la propuesta sigue aceptada. | Sí |
+| S-20 | El mail pide avisar con una "notificación push". | Las notificaciones son **dentro de la app**: campanita con contador, en vivo con Supabase Realtime. No hay push con la app cerrada, porque eso necesita un servidor que lo envíe. | Sí |
+| S-21 | Cancelación de función por el cine: los compradores anónimos no tienen cuenta donde acreditar. | Se acredita **solo a los usuarios registrados**. Las compras anónimas se cancelan igual (las butacas se liberan), pero no se acreditan. Al confirmar, el admin ve cuántas son. | Sí |
+| S-22 | ¿Qué pasa con el horario de una función cancelada? | Queda **ocupando su sala** (el problema técnico es de esa sala) y no se puede editar. No aparece para los clientes y no se puede comprar. | No |
+| S-23 | Lista de espera: ¿cuántas butacas pide cada usuario? ¿Se reserva una butaca puntual? | El usuario elige de **1 a 6** butacas al anotarse. Se reserva **cupo** (una cantidad de butacas), no una butaca puntual: durante 15 minutos nadie más puede comprar esas butacas y quien las tiene elige cualquier butaca libre. La reserva vence por hora (lo controla la base) y un proceso de `pg_cron` que corre cada minuto se la pasa al siguiente. | Sí |
+| S-24 | Roles configurables: ¿se reemplazan los tres roles actuales? | **No**: se conservan (cliente, empleado, administrador) y los roles personalizados se **suman**: cada uno es una lista de secciones del panel. El administrador siempre tiene todas. Solo el administrador crea roles y los asigna; "Roles" y "Usuarios" no se pueden delegar. | Sí |
 | S-18 | El mail del 06/02 pide que el admin controle "la distribución de las butacas", pero el del 01/01 dice que la forma de las salas "es siempre la misma" (20 filas, bloques de 4, 20 y 4), y los cambios posteriores (fila accesible el 12/02, filas VIP el 10/03) se pidieron para **todas** las salas a la vez. | La distribución es una **regla del negocio** y no un dato de cada sala: cada sala nueva se arma sola con esa forma (`crear_sala`). El admin controla las salas creándolas y habilitándolas / deshabilitándolas, pero no mueve butacas a mano. Así ninguna sala queda distinta de lo que definió el cliente, no se rompen las filas accesibles ni las VIP, y no desaparecen butacas con entradas ya vendidas. | No |
 
 ---
@@ -277,7 +297,7 @@ Referencias: ✅ implementado · 🟡 parcial · ❌ pendiente.
 | RF-04 | ✅ | `peliculas.ventas` cuenta entradas vendidas (S-9) y lo mantienen triggers (migración 020): suma al comprar y resta al cancelar. La cartelera se ordena por ventas y las 3 primeras llevan la leyenda "Más vendida #1, #2, #3". |
 | RF-05 | ✅ | Buscador por nombre + filtro por género (contempla varios géneros). Los filtros quedan en la URL. |
 | RF-06 | ✅ | Sección Próximamente con las películas en estado "Próximamente", ordenadas por fecha de estreno. |
-| RF-07 | 🟡 | Se puede activar y cancelar la alerta; todavía no se envía la notificación. |
+| RF-07 | ✅ | Se puede activar y cancelar la alerta. Cuando la película pasa a "En cartelera" (o llega su fecha de estreno) se le envía la notificación (RF-57, migraciones 029 y 031). |
 | RF-08 | ✅ | Detalle con horarios, formato, idioma, sala, precio, reseñas y promedio. |
 | RF-09 | ✅ | 1 a 5 estrellas + comentario; solo quien ya vio la película (regla en la base). |
 | RF-10 | ✅ | Promedio en el detalle. |
@@ -323,6 +343,11 @@ Referencias: ✅ implementado · 🟡 parcial · ❌ pendiente.
 | RF-53 | ✅ | El reporte de facturación se exporta a PDF (jsPDF) y a Excel (.xlsx con SheetJS). |
 | RF-54 | ✅ | Gráficos de barras (HTML y CSS) de las películas más vistas (entradas vendidas para funciones de la semana o del mes) y de los productos más vendidos (sueltos, en combos y canjeados). |
 | RF-55 | ✅ | Pantalla Actividad del admin (migración 026): registra quién creó, editó o eliminó una función, quién modificó un precio (tabla de entradas, preventa, productos y combos, con antes → ahora) y quién validó una entrada o entregó el candy bar, con fecha y hora. Lo registran triggers de la base, así no se puede saltear desde el navegador; solo el admin lo lee y nadie lo puede editar ni borrar. Filtro por tipo. |
+| RF-56 | ✅ | Cliente: pantalla "Proponer película" (formulario con los tres campos y lista de sus propuestas con su estado). Admin: pantalla Propuestas con pendientes y resueltas; "Aceptar" abre el alta de película con título y sinopsis cargados y "Rechazar" la cierra. La regla de una pendiente por usuario y los permisos (solo el cliente propone, solo el admin cambia el estado) están en la base (migración 028). |
+| RF-57 | ✅ | Menú con campanita y contador en vivo (Supabase Realtime) y pantalla Notificaciones. Las crean funciones y triggers de la base: estreno, función cancelada y lista de espera (migración 029). |
+| RF-58 | ✅ | Botón "Cancelar función" en Funciones, con un resumen de lo que se acredita. `cancelar_funcion` (migración 030) hace todo en una transacción: acredita el total de cada compra (como `cancelar_orden`), revierte y devuelve puntos, libera las butacas, notifica y deja registro en la actividad. La notificación enlaza a la película para reubicarse con el crédito. Una función cancelada no se puede comprar ni editar. |
+| RF-59 | ✅ | En la compra, si la función está agotada, el cliente se anota eligiendo la cantidad de butacas. Al liberarse lugar, la base le reserva cupo al primero por 15 minutos y le notifica; un trigger impide que otros compren esas butacas. Vence solo y pasa al siguiente (`pg_cron`). Perfil: "Mis listas de espera" con la posición. Admin: personas en espera en cada función (migración 031). |
+| RF-60 | ✅ | Pantallas Roles (crear, editar y eliminar roles con permisos) y Usuarios (asignar un rol). El menú, el panel y las rutas (`permisoGuard`) muestran solo lo permitido; en la base, `tiene_permiso()` y políticas nuevas que se suman a las del administrador (migración 032). |
 
 ### 9.2 Requerimientos no funcionales
 

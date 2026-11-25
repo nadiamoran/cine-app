@@ -49,6 +49,52 @@
     {{ funcion()!.nombreSala }}
   </p>
 
+  @if (miEspera(); as espera) {
+    <section class="aviso-espera">
+      @if (espera.estado === 'avisado') {
+        <strong>
+          Tenés {{ espera.cantidad }} {{ espera.cantidad === 1 ? 'butaca reservada' : 'butacas reservadas' }}
+          hasta las {{ espera.venceEn | date: 'HH:mm' }}.
+        </strong>
+        <p>Elegí tus butacas y confirmá la compra antes de que venza la reserva.</p>
+      } @else {
+        <strong>
+          Estás en la lista de espera: lugar {{ espera.posicion }}
+          ({{ espera.cantidad }} {{ espera.cantidad === 1 ? 'butaca' : 'butacas' }}).
+        </strong>
+        <p>Te avisamos cuando se libere algo, y desde ese momento tenés 15 minutos para comprar.</p>
+      }
+      <button type="button" class="btn-secundario" (click)="onSalirEspera(espera.id)">Salir de la lista</button>
+    </section>
+  } @else if (agotada()) {
+    <section class="aviso-espera">
+      <strong>Función agotada.</strong>
+      @if (authService.currentUser()?.rol === 'cliente') {
+        <form novalidate [formGroup]="esperaForm" (ngSubmit)="onAnotarseEspera()">
+          <label>
+            ¿Cuántas butacas querés?
+            <select formControlName="cantidad">
+              @for (cantidad of opcionesCantidad; track cantidad) {
+                <option [ngValue]="cantidad">{{ cantidad }}</option>
+              }
+            </select>
+          </label>
+          <button type="submit" [disabled]="anotando()">
+            {{ anotando() ? 'Anotando...' : 'Anotarme en la lista de espera' }}
+          </button>
+        </form>
+      } @else if (!authService.currentUser()) {
+        <p>
+          Si tenés cuenta, iniciá sesión para anotarte en la lista de espera.
+          <a routerLink="/login">Ingresar</a>
+        </p>
+      }
+    </section>
+  }
+  @if (errorEspera()) {
+    <p class="error">{{ errorEspera() }}</p>
+  }
+
   @if (!puedeComprar()) {
     <p class="error">
       Esta función es apta {{ pelicula()?.restriccionEdad }}. Iniciá sesión con una cuenta que

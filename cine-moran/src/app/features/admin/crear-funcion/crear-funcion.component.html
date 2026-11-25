@@ -270,10 +270,25 @@
           {{ funcion.idioma === 'castellano' ? 'Castellano' : 'Subtitulada' }} ·
           ${{ funcion.precio }} · VIP ${{ funcion.precioVip }}
         </p>
+        @if (enEspera().get(funcion.id); as cantidad) {
+          <p class="detalle-seleccion">{{ cantidad }} {{ cantidad === 1 ? 'persona' : 'personas' }} en lista de espera</p>
+        }
       </div>
 
       <div class="acciones-funcion">
-        <button type="button" class="btn-secundario" (click)="onEditar(funcion)">Editar</button>
+        @if (funcion.canceladaEn) {
+          <span class="badge-cancelada">Cancelada</span>
+        } @else {
+          <button type="button" class="btn-secundario" (click)="onEditar(funcion)">Editar</button>
+          <button
+            type="button"
+            class="btn-secundario btn-eliminar"
+            [disabled]="cancelandoId() === funcion.id"
+            (click)="onCancelarFuncion(funcion)"
+          >
+            {{ cancelandoId() === funcion.id ? 'Cancelando...' : 'Cancelar función' }}
+          </button>
+        }
         <button
           type="button"
           class="btn-secundario btn-eliminar"

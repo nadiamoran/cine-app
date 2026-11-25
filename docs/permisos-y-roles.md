@@ -59,6 +59,8 @@ El rol queda en `'cliente'` por defecto. Los roles `empleado` y `administrador` 
 
 **Por qué es mejor así:** si el alta de administradores fuera una función de la app, sería la puerta de ataque más obvia. Dejarlo fuera de la app elimina la posibilidad de escalar privilegios.
 
+**Roles personalizados (migración 032):** los tres roles fijos siguen igual, y el administrador puede además crear roles con una lista de secciones del panel y asignárselos a un usuario. No rompe la regla de arriba: la columna nueva `profiles.rol_id` tampoco está entre las que el cliente puede escribir, y solo cambia con la función `asignar_rol`, que verifica adentro que quien llama es administrador. Ver la Parte 3b.
+
 ---
 
 # PARTE 1 — Permisos del ADMINISTRADOR
@@ -233,6 +235,28 @@ No lo pediste explícitamente, pero hay que tenerlo presente porque define dónd
 
 ---
 
+# PARTE 3b — Roles personalizados (secciones del panel de admin)
+
+El cliente pidió poder crear roles que accedan solo a algunas partes del administrador (ejemplo: uno que solo vea Reportes) y elegir a qué usuario dárselo.
+
+- **Qué es:** un rol personalizado es un **nombre + una lista de permisos**. Cada permiso es una sección del panel: películas, funciones, salas, productos, combos, cupones, recompensas, reportes, actividad, propuestas y validar. Un usuario puede tener uno (`profiles.rol_id`) y **se suma** a su rol de siempre. El administrador tiene todos los permisos siempre.
+- **Qué no se delega:** las pantallas Roles y Usuarios son solo del administrador. Si no, un rol personalizado podría darse más permisos.
+- **Por qué se sumaron y no se reemplazaron los tres roles:** reescribir el modelo habría obligado a tocar todas las políticas que ya funcionan (más de 20 entre políticas y funciones). Sumar es más seguro y se explica fácil.
+- **Cómo se aplica en cada capa:**
+
+| Capa | Dónde | Qué hace |
+|---|---|---|
+| Base: función | `tiene_permiso('reportes')` ([032](../supabase/migraciones/032_roles_personalizados.sql)) | Verdadera si es administrador o si su rol personalizado incluye ese permiso. Es el equivalente de `tiene_rol` para secciones. |
+| Base: políticas | Políticas nuevas por tabla (`"permiso peliculas"`, `"permiso cupones"`, etc.) | Las del administrador **no se tocaron**. En Postgres las políticas permisivas se **suman**: alcanza con que una deje pasar. El rol personalizado puede lo mismo que el administrador, pero solo en su sección. |
+| Base: funciones | `asignar_funcion`, `programar_funciones`, `reporte_*`, `validar_entrada`, etc. | Su chequeo interno `tiene_rol(administrador)` pasó a `tiene_rol(administrador) OR tiene_permiso('sección')`. Se hizo sobre la definición existente para no copiar los cuerpos. |
+| Guard | [permiso.guard.ts](../cine-moran/src/app/core/guards/permiso.guard.ts) | Cada ruta del admin declara su permiso en `data: { permiso: 'reportes' }` y **un solo guard** lo lee con `route.data`. |
+| Guard del panel | [admin.guard.ts](../cine-moran/src/app/core/guards/admin.guard.ts) | `canActivateChild` deja entrar al panel al administrador y a quien tenga algún permiso. |
+| Menú y panel | [admin-layout.component.ts](../cine-moran/src/app/features/admin/layout/admin-layout.component.ts) y [panel-admin.component.ts](../cine-moran/src/app/features/admin/panel/panel-admin.component.ts) | Muestran solo las secciones permitidas, a partir de una lista central ([secciones-admin.ts](../cine-moran/src/app/features/admin/secciones-admin.ts)). |
+
+- **Quién asigna:** `asignar_rol` y `listar_usuarios` son funciones `security definer` que verifican adentro que quien llama es administrador. `listar_usuarios` existe porque `profiles` solo deja ver la fila propia y el email vive en `auth.users`.
+
+---
+
 # PARTE 4 — Resumen comparativo
 
 | Acción | Visitante | Cliente | Empleado | Admin |
@@ -254,6 +278,10 @@ No lo pediste explícitamente, pero hay que tenerlo presente porque define dónd
 | Cupones (ver y cambiar porcentajes) | ❌ | ❌ | ❌ | ✅ |
 | Subir imágenes | ❌ | ❌ | ❌ | ✅ |
 | Cambiarse el rol | ❌ | ❌ | ❌ | ❌ (solo desde Supabase) |
+| Proponer una película | ❌ | ✅ | ❌ | ❌ |
+| Notificaciones y lista de espera | ❌ | ✅ | ❌ | ❌ |
+| Resolver propuestas, cancelar funciones, ver la lista de espera | ❌ | ❌ | ❌ | ✅ (o rol personalizado con el permiso) |
+| Crear roles y asignarlos | ❌ | ❌ | ❌ | ✅ (no se delega) |
 
 > Nota: las filas "Ver su historial de compras" para empleado y administrador reflejan la política de `ordenes` de la migración 004, que les permite leer todas las órdenes. Las demás filas de empleado y admin como "perfil", "reseña" y "alerta" son una consecuencia de que tienen una cuenta registrada; el panel del admin no usa `/perfil`.
 

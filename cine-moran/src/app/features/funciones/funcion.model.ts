@@ -21,4 +21,5 @@ export interface Funcion {
   precio: number; // butacas estándar y accesibles
   precioVip: number; // butacas VIP (filas R, S y T)
   nombrePelicula?: string; // solo cuando se trae con el join a peliculas (listado de admin)
+  canceladaEn?: string | null; // solo en el listado de admin: el cine la canceló (migración 030)
 }

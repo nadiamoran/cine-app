@@ -1,0 +1,61 @@
+<h1>Roles</h1>
+<p class="detalle-seleccion">
+  Los roles definen a qué secciones del panel de administración puede acceder un usuario. Se
+  asignan desde la pantalla Usuarios.
+</p>
+
+<h2>{{ editandoId() ? 'Editar rol' : 'Nuevo rol' }}</h2>
+
+<form novalidate [formGroup]="rolForm" (ngSubmit)="onGuardar()">
+  <label>
+    Nombre del rol
+    <input type="text" formControlName="nombre" placeholder="Reportes" />
+    @if (rolForm.controls.nombre.touched && rolForm.controls.nombre.invalid) {
+      <small class="error">El nombre es obligatorio</small>
+    }
+  </label>
+
+  <fieldset formGroupName="permisos">
+    <legend>Secciones habilitadas</legend>
+    @for (permiso of permisosDisponibles; track permiso.clave) {
+      <label class="check-preventa">
+        <input type="checkbox" [formControlName]="permiso.clave" />
+        {{ permiso.texto }}
+      </label>
+    }
+  </fieldset>
+
+  @if (errorMsg()) {
+    <p class="error">{{ errorMsg() }}</p>
+  }
+
+  <div class="acciones-validacion">
+    <button type="submit" [disabled]="guardando()">
+      {{ guardando() ? 'Guardando...' : editandoId() ? 'Guardar cambios' : 'Crear rol' }}
+    </button>
+    @if (editandoId()) {
+      <button type="button" class="btn-secundario" (click)="onCancelar()">Cancelar</button>
+    }
+  </div>
+</form>
+
+<h2>Roles creados</h2>
+
+@if (cargando()) {
+  <p>Cargando...</p>
+} @else {
+  @for (rol of roles(); track rol.id) {
+    <article class="cupon-item">
+      <div>
+        <strong>{{ rol.nombre }}</strong>
+        <p class="detalle-seleccion">{{ textoPermisos(rol) }}</p>
+      </div>
+      <div class="acciones-funcion">
+        <button type="button" class="btn-secundario" (click)="onEditar(rol)">Editar</button>
+        <button type="button" class="btn-secundario btn-eliminar" (click)="onEliminar(rol)">Eliminar</button>
+      </div>
+    </article>
+  } @empty {
+    <p class="detalle-seleccion">Todavía no creaste ningún rol.</p>
+  }
+}

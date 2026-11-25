@@ -15,6 +15,9 @@ Trabajo práctico N.° 1 de Programación IV (UTN) — Nadia Moran.
 **Cliente (o visitante sin cuenta)**
 - Ver la cartelera con buscador y filtro por género. Las 3 películas más vendidas aparecen primero, con su leyenda.
 - Ver la sección Próximamente y activar una alerta en una película.
+- Si está registrado, proponer una película que no está en la cartelera (una propuesta a la vez).
+- Recibir notificaciones dentro de la app (campanita con contador, en vivo): estreno de una película con alerta, función cancelada por el cine y lugar en una lista de espera.
+- Anotarse en la lista de espera de una función agotada. Si se libera lugar, el primero tiene 15 minutos para comprar, y en el perfil ve en qué listas está y en qué posición.
 - Ver el detalle de cada película: funciones, reseñas y puntuación promedio.
 - Elegir butacas en un mapa que se actualiza en vivo cuando otra persona compra.
 - Comprar entradas (estándar, accesibles o VIP), productos y combos, y descargar el PDF con un QR por entrada.
@@ -24,6 +27,10 @@ Trabajo práctico N.° 1 de Programación IV (UTN) — Nadia Moran.
 - Validar entradas con la cámara o escribiendo el código, y entregar el candy bar con el mismo código.
 
 **Administrador**
+- Propuestas de películas de los clientes: aceptarlas (abre el alta de película con los datos cargados) o rechazarlas.
+- Cancelar una función completa: las entradas vendidas pasan a crédito de cada comprador registrado, las butacas se liberan y se les avisa.
+- Ver cuánta gente espera en cada función agotada.
+- Roles personalizados: crear un rol con acceso a algunas secciones del panel (ej. solo Reportes) y asignárselo a un usuario.
 - Películas (con preventa), funciones (sueltas o programadas por días y horarios), salas y precios de entradas, productos, combos, cupones y recompensas.
 - Reporte de facturación por día exportable a PDF y Excel, rankings de películas y productos, y un log de actividad.
 
@@ -51,7 +58,7 @@ Trabajo práctico N.° 1 de Programación IV (UTN) — Nadia Moran.
    npm install
    ```
 2. En `src/environments/environment.ts` van la URL y la clave pública (anon key) del proyecto de Supabase.
-3. Crear la base: en el SQL Editor de Supabase correr primero `supabase/schema.sql` y después las migraciones de `supabase/migraciones/` **en orden**, de la 001 a la 027. Cada migración dice al principio cuáles necesita antes.
+3. Crear la base: en el SQL Editor de Supabase correr primero `supabase/schema.sql` y después las migraciones de `supabase/migraciones/` **en orden**, de la 001 a la 032. La lista de espera usa `pg_cron`: antes de correr la 031 hay que activarlo en Supabase (Database > Extensions). Cada migración dice al principio cuáles necesita antes.
 4. Levantar la app:
    ```bash
    npm start
@@ -76,6 +83,9 @@ cine-moran/src/app/
     ├── auth/            # login y registro
     ├── catalogo/        # cartelera, detalle, reseñas, próximamente y preventa
     ├── mis-peliculas/   # historial visual de lo que vio el cliente
+    ├── propuestas/      # propuestas de películas de los clientes
+    ├── notificaciones/  # avisos dentro de la app
+    ├── espera/          # lista de espera de funciones agotadas
     ├── salas/           # mapa de butacas (componente reutilizable)
     ├── funciones/       # funciones y precios por formato
     ├── ordenes/         # compra, cancelación y PDF de las entradas
@@ -87,7 +97,7 @@ cine-moran/src/app/
 
 supabase/
 ├── schema.sql       # tablas iniciales
-└── migraciones/     # 001 a 027, cada una con un cambio y su explicación
+└── migraciones/     # 001 a 032, cada una con un cambio y su explicación
 ```
 
 Organicé el código **por funcionalidad** y no por tipo de archivo: todo lo de una parte del sistema (componentes, servicio y modelo) está junto, así es más fácil encontrarlo. Cada pantalla se carga recién cuando se entra (lazy loading).
@@ -136,7 +146,13 @@ El front valida también, pero para dar una mejor experiencia (avisar antes de e
 
 **Log de actividad con triggers.** Quién creó una función, quién cambió un precio y quién validó un QR lo registra la base automáticamente. Solo el admin lo puede leer y nadie lo puede borrar desde la app.
 
-**Los roles se asignan fuera de la app.** El cliente no puede cambiar su rol ni sus puntos (permisos por columna en `profiles`). Los empleados y administradores se dan de alta desde Supabase, para que no exista una pantalla que alguien pueda usar para darse permisos.
+**Roles fijos y roles personalizados.** El cliente no puede cambiar su rol ni sus puntos (permisos por columna en `profiles`). Los empleados y administradores se siguen dando de alta desde Supabase, para que no exista una pantalla que alguien pueda usar para darse permisos. Además, el administrador puede crear roles personalizados (una lista de secciones del panel) y asignarlos a un usuario. Se **suman** a los tres roles de siempre y solo el administrador los gestiona. En la base, `tiene_permiso()` y políticas nuevas se suman a las del administrador, sin tocar las existentes.
+
+**Cancelar una función es una sola transacción.** `cancelar_funcion` acredita a cada comprador registrado, libera las butacas y notifica en una única función de la base: si algo falla, no se acredita a nadie.
+
+**Lista de espera con cupo reservado y vencimiento automático.** Al liberarse butacas, la base reserva cupo por 15 minutos para el primero de la lista y un trigger impide que otros compren esas butacas. La reserva vence por hora, así que la regla no depende de ningún proceso; `pg_cron` solo se encarga de pasarla al siguiente cada minuto.
+
+**Notificaciones dentro de la app.** Las crean la base (triggers y funciones) y la app las recibe en vivo con Realtime. No hay push con la app cerrada, porque necesita un servidor que lo envíe.
 
 **Guards que esperan la sesión.** La sesión se recupera de forma asíncrona al abrir la app, así que los guards esperan a que termine antes de decidir. Sin eso, al recargar la página parecía que no había nadie logueado.
 
@@ -155,7 +171,7 @@ El front valida también, pero para dar una mejor experiencia (avisar antes de e
 | Servicios | Un servicio por funcionalidad (películas, funciones, órdenes, candy bar, recompensas, reportes, etc.) |
 | HTTP | A través de `supabase-js`, que hace los pedidos a la API REST de Supabase |
 | Formularios | Reactive Forms en todos los formularios, con validadores propios en `shared/validators` |
-| Guards | `authGuard`, `adminGuard` (protege todas las rutas hijas de admin), `empleadoGuard` (`canMatch`) y `confirmarSalidaGuard` (no perder la selección de butacas) |
+| Guards | `authGuard`, `adminGuard` (`canActivateChild`: protege el panel de admin), `permisoGuard` (cada sección del admin declara su permiso en `data`), `empleadoGuard` (`canMatch`) y `confirmarSalidaGuard` (`canDeactivate`: no perder la selección de butacas) |
 | Directivas | `butaca-tipo` (estilo según el tipo de butaca) y `routerLinkActive` en los menús |
 | Pipes | `duracion` (propio), y `date` y `number` en castellano |
 | PWA | Manifest, íconos y service worker; se puede instalar |
@@ -165,7 +181,8 @@ El front valida también, pero para dar una mejor experiencia (avisar antes de e
 
 ## Pendientes
 
-- La alerta de "Próximamente" se activa, pero todavía no envía la notificación cuando abre la venta (RF-07).
-- Quedan algunos campos de fecha con el calendario común del navegador (RNF-02).
+- Las notificaciones son dentro de la app: no hay push con la app cerrada (supuesto S-20).
+- El pago es simulado: no hay pasarela de pago real (supuesto S-2).
+- Las compras de usuarios sin cuenta no se acreditan si el cine cancela una función (supuesto S-21).
 
 El estado detallado de cada requerimiento está en la sección 9 de [`docs/requerimientos.md`](docs/requerimientos.md).

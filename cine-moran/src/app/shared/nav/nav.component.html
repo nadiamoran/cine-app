@@ -30,7 +30,7 @@
       </a>
     }
     <!-- el admin tiene un solo link: desde el panel entra a cada sección -->
-    @if (authService.currentUser()?.rol === 'administrador') {
+    @if (authService.tieneAccesoAdmin()) {
       <a routerLink="/admin" routerLinkActive="activo">Administración</a>
     }
     @if (authService.currentUser()?.rol === 'empleado') {

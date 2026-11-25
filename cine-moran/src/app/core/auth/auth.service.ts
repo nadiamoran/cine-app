@@ -1,4 +1,4 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, computed, signal } from '@angular/core';
 import { SupabaseService } from '../supabase.service'; // ajustá el path real
 import { LoginData, RegisterData, Profile } from './user.model';
 
@@ -22,6 +22,21 @@ export class AuthService {
   private get supabase() {
     return this.supabaseService.client;
   }
+
+  // ¿puede entrar a esta sección del admin? El administrador a todas; un rol
+  // personalizado solo a las de su lista; 'admin' es solo del administrador
+  tienePermiso(permiso: string): boolean {
+    const usuario = this.currentUser();
+    if (!usuario) return false;
+    if (usuario.rol === 'administrador') return true;
+    return permiso !== 'admin' && usuario.permisos.includes(permiso);
+  }
+
+  // entra al panel de admin: es administrador o su rol tiene algún permiso
+  tieneAccesoAdmin = computed(() => {
+    const usuario = this.currentUser();
+    return !!usuario && (usuario.rol === 'administrador' || usuario.permisos.length > 0);
+  });
 
   private async restoreSession() {
     const { data } = await this.supabase.auth.getSession();
@@ -89,9 +104,10 @@ export class AuthService {
   private async loadProfile(userId: string) {
     // el email no vive en "profiles" (esa tabla es de datos del cliente),
     // vive en auth.users; lo traemos aparte y lo sumamos al perfil.
-    const [{ data }, { data: userData }] = await Promise.all([
+    const [{ data }, { data: userData }, { data: permisos }] = await Promise.all([
       this.supabase.from('profiles').select('*').eq('id', userId).single(),
       this.supabase.auth.getUser(),
+      this.supabase.rpc('mis_permisos'),
     ]);
 
     if (data) {
@@ -107,6 +123,7 @@ export class AuthService {
         rol: data.rol,
         puntos: data.puntos,
         credito: data.credito ?? 0,
+        permisos: permisos ?? [],
       });
     }
   }

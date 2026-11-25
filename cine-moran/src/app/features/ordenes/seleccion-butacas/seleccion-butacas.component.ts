@@ -21,6 +21,7 @@ import { detalleCombo } from '../../candy-bar/combo.utils';
 import { infoPreventa, precioVigente } from '../../catalogo/preventa.utils';
 import { RecompensasService } from '../../puntos/recompensas.service';
 import { Recompensa } from '../../puntos/recompensa.model';
+import { EsperaService, ListaEspera } from '../../espera/espera.service';
 
 @Component({
   selector: 'app-seleccion-butacas',
@@ -51,6 +52,17 @@ export class SeleccionButacasComponent implements OnInit, ComponentePuedeSalir {
   combos = signal<Combo[]>([]);
   cantidadesProductos = signal<Map<string, number>>(new Map());
   cantidadesCombos = signal<Map<string, number>>(new Map());
+
+  // lista de espera (migración 031): cuando la función está agotada el cliente
+  // puede anotarse con la cantidad de butacas que quiere
+  readonly opcionesCantidad = [1, 2, 3, 4, 5, 6];
+  miEspera = signal<ListaEspera | null>(null);
+  anotando = signal(false);
+  errorEspera = signal<string | null>(null);
+  esperaForm = new FormGroup({
+    cantidad: new FormControl(1, { nonNullable: true, validators: [Validators.required, Validators.min(1), Validators.max(6)] }),
+  });
+  agotada = computed(() => this.butacas().length > 0 && this.ocupadas().size >= this.butacas().length);
 
   emailForm = new FormGroup({
     email: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.email] }),
@@ -242,6 +254,7 @@ export class SeleccionButacasComponent implements OnInit, ComponentePuedeSalir {
     private ticketsService: TicketsService,
     private candyBarService: CandyBarService,
     private recompensasService: RecompensasService,
+    private esperaService: EsperaService,
     protected authService: AuthService,
     private destroyRef: DestroyRef,
   ) {}
@@ -287,9 +300,48 @@ export class SeleccionButacasComponent implements OnInit, ComponentePuedeSalir {
         (butacaId) => this.onButacaLiberada(butacaId),
       );
       this.destroyRef.onDestroy(dejarDeEscuchar);
+
+      await this.cargarMiEspera();
     }
 
     this.cargando.set(false);
+  }
+
+  // ¿este usuario está en la lista de espera de esta función? (solo clientes)
+  private async cargarMiEspera() {
+    const funcion = this.funcion();
+    if (!funcion || this.authService.currentUser()?.rol !== 'cliente') return;
+
+    const listas = await this.esperaService.getMisListas();
+    this.miEspera.set(listas.find((lista) => lista.funcionId === funcion.id) ?? null);
+  }
+
+  async onAnotarseEspera() {
+    this.errorEspera.set(null);
+    if (this.esperaForm.invalid) return;
+
+    this.anotando.set(true);
+    const { error } = await this.esperaService.anotarse(
+      this.funcion()!.id,
+      this.esperaForm.getRawValue().cantidad,
+    );
+    this.anotando.set(false);
+
+    if (error) {
+      this.errorEspera.set(error);
+      return;
+    }
+    await this.cargarMiEspera();
+  }
+
+  async onSalirEspera(id: string) {
+    this.errorEspera.set(null);
+    const { error } = await this.esperaService.salir(id);
+    if (error) {
+      this.errorEspera.set(error);
+      return;
+    }
+    this.miEspera.set(null);
   }
 
   private onButacaOcupada(butacaId: string) {
@@ -316,6 +368,10 @@ export class SeleccionButacasComponent implements OnInit, ComponentePuedeSalir {
     const ocupadas = new Set(this.ocupadas());
     ocupadas.delete(butacaId);
     this.ocupadas.set(ocupadas);
+
+    // si se liberó una butaca, la base pudo haberle reservado cupo a este
+    // usuario (lista de espera): lo vuelvo a consultar
+    this.cargarMiEspera();
   }
 
   estaSeleccionada(butacaId: string): boolean {

@@ -15,6 +15,7 @@ export class FuncionesService {
       .from('funciones')
       .select('*, salas(nombre)')
       .eq('id', id)
+      .is('cancelada_en', null) // una función cancelada no se puede comprar
       .single();
 
     if (error || !data) return null;
@@ -38,6 +39,7 @@ export class FuncionesService {
       .from('funciones')
       .select('*, salas(nombre)')
       .eq('pelicula_id', peliculaId)
+      .is('cancelada_en', null)
       .gte('inicio', new Date().toISOString()) // solo funciones que todavía no arrancaron
       .order('inicio', { ascending: true });
 
@@ -104,7 +106,37 @@ export class FuncionesService {
       precio: row.precio,
       precioVip: row.precio_vip,
       nombrePelicula: row.peliculas?.nombre ?? '',
+      canceladaEn: row.cancelada_en ?? null,
     }));
+  }
+
+  // Lo que se va a acreditar si el cine cancela esta función, para
+  // mostrarlo antes de confirmar (solo cuentan las compras con cuenta)
+  async resumenCancelacion(funcionId: string): Promise<{ compras: number; credito: number; sinCuenta: number }> {
+    const { data } = await this.supabase
+      .from('ordenes')
+      .select('total, usuario_id')
+      .eq('funcion_id', funcionId)
+      .eq('estado', 'confirmada');
+
+    const filas = data ?? [];
+    const conCuenta = filas.filter((fila: any) => fila.usuario_id);
+    return {
+      compras: conCuenta.length,
+      credito: conCuenta.reduce((suma: number, fila: any) => suma + Number(fila.total), 0),
+      sinCuenta: filas.length - conCuenta.length,
+    };
+  }
+
+  // cancela la función completa (función cancelar_funcion, migración 030): la
+  // base acredita a todos los compradores registrados o a ninguno
+  async cancelar(id: string): Promise<{
+    resultado: { comprasAcreditadas: number; creditoTotal: number; comprasSinCuenta: number } | null;
+    error: string | null;
+  }> {
+    const { data, error } = await this.supabase.rpc('cancelar_funcion', { p_funcion_id: id });
+    if (error) return { resultado: null, error: error.message };
+    return { resultado: data, error: null };
   }
 
   // igual que crear: la base vuelve a validar el horario y elige la sala

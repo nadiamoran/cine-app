@@ -14,7 +14,7 @@ export const empleadoGuard: CanMatchFn = async () => {
   await authService.sesionLista;
 
   const rol = authService.currentUser()?.rol;
-  if (rol === 'empleado' || rol === 'administrador') {
+  if (rol === 'empleado' || authService.tienePermiso('validar')) {
     return true;
   }
 

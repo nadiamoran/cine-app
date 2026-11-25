@@ -6,6 +6,7 @@ import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { PeliculasService } from '../../catalogo/peliculas.service';
 import { Pelicula } from '../../catalogo/pelicula.model';
 import { FuncionesService } from '../../funciones/funciones.service';
+import { EsperaService } from '../../espera/espera.service';
 import { Formato, Funcion, Idioma, PrecioEntrada } from '../../funciones/funcion.model';
 import { fechaEnRangoValidator } from '../../../shared/validators/fecha.validators';
 
@@ -34,6 +35,8 @@ export class CrearFuncionComponent implements OnInit {
   // funciones actuales, para poder editarlas o eliminarlas
   cargando = signal(true);
   funciones = signal<Funcion[]>([]);
+  // cuánta gente espera en la lista de cada función (funcion -> cantidad)
+  enEspera = signal<Map<string, number>>(new Map());
 
   // buscador y filtro del listado (mismo mecanismo que en Películas)
   busqueda = signal('');
@@ -54,6 +57,7 @@ export class CrearFuncionComponent implements OnInit {
     );
   });
   eliminandoId = signal<string | null>(null);
+  cancelandoId = signal<string | null>(null);
 
   // el formulario queda oculto hasta que se toca "Nueva función" o "Editar"
   mostrarFormulario = signal(false);
@@ -100,6 +104,7 @@ export class CrearFuncionComponent implements OnInit {
   constructor(
     private peliculasService: PeliculasService,
     private funcionesService: FuncionesService,
+    private esperaService: EsperaService,
   ) {
     // si cambia algo del patrón, la vista previa anterior ya no vale
     this.programacionForm.valueChanges
@@ -119,7 +124,12 @@ export class CrearFuncionComponent implements OnInit {
 
   private async recargar() {
     this.cargando.set(true);
-    this.funciones.set(await this.funcionesService.getProximas());
+    const [funciones, enEspera] = await Promise.all([
+      this.funcionesService.getProximas(),
+      this.esperaService.getConteoPorFuncion(),
+    ]);
+    this.funciones.set(funciones);
+    this.enEspera.set(enEspera);
     this.cargando.set(false);
   }
 
@@ -316,6 +326,38 @@ export class CrearFuncionComponent implements OnInit {
 
     if (this.editandoId() === funcion.id) this.onCancelar();
     this.exito.set('Función eliminada.');
+    await this.recargar();
+  }
+
+  // el cine suspende la función: se acredita a cada comprador registrado y se
+  // liberan las butacas, todo junto en la base (cancelar_funcion, migración 030)
+  async onCancelarFuncion(funcion: Funcion) {
+    this.errorMsg.set(null);
+    this.exito.set(null);
+
+    const resumen = await this.funcionesService.resumenCancelacion(funcion.id);
+    const confirmado = confirm(
+      `¿Cancelar la función de "${funcion.nombrePelicula}" del ${new Date(funcion.inicio).toLocaleString('es-AR')}?\n\n` +
+        `Se acreditan $${resumen.credito} a ${resumen.compras} compra(s) de usuarios registrados y se les avisa. ` +
+        `Las butacas quedan libres.` +
+        (resumen.sinCuenta > 0 ? `\n\n${resumen.sinCuenta} compra(s) sin cuenta se cancelan, pero no se pueden acreditar.` : '') +
+        `\n\nEsto no se puede deshacer.`,
+    );
+    if (!confirmado) return;
+
+    this.cancelandoId.set(funcion.id);
+    const { resultado, error } = await this.funcionesService.cancelar(funcion.id);
+    this.cancelandoId.set(null);
+
+    if (error || !resultado) {
+      this.errorMsg.set(error ?? 'No se pudo cancelar la función');
+      return;
+    }
+
+    if (this.editandoId() === funcion.id) this.onCancelar();
+    this.exito.set(
+      `Función cancelada. Se acreditaron $${resultado.creditoTotal} a ${resultado.comprasAcreditadas} compra(s).`,
+    );
     await this.recargar();
   }
 
